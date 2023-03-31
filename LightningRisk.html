@@ -1,0 +1,49 @@
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// Replace with your own API key and subscription ID
+var apiKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+var subscriptionId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+
+// The coordinates of interest
+var latitude = 1.32648;
+var longitude = 103.80536;
+
+// The URL of the Lightning Information Service API
+var url = "https://api.data.gov.sg/v1/environment/lightning-strikes?date_time=now&lat=" + latitude + "&lon=" + longitude;
+
+// A function to call the API and display the results
+function checkLightning() {
+  // Make an AJAX request with the API key and subscription ID as headers
+  $.ajax({
+    url: url,
+    headers: {
+      "api-key": apiKey,
+      "Subscription-Key": subscriptionId
+    },
+    success: function(data) {
+      // Parse the JSON data and get the lightning information
+      var items = data.items;
+      var lightning = items[0].lightning;
+      var strikes = lightning.strikes;
+      var count = strikes.length;
+      
+      // Display the number of lightning strikes detected within 6 km radius of the location
+      $("#result").html("There are " + count + " lightning strikes detected within 6 km radius of (" + latitude + ", " + longitude + ")");
+    },
+    error: function(error) {
+      // Display an error message if the API call fails
+      $("#result").html("Sorry, something went wrong. Please check your API key, subscription ID and URL.");
+    }
+  });
+}
+</script>
+</head>
+<body>
+<h1>Lightning Risk Checker</h1>
+<p>Click the button below to check for lightning risks at a given location.</p>
+<button onclick="checkLightning()">Check Lightning</button>
+<p id="result"></p>
+</body>
+</html>
