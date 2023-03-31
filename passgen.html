@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .form-group label {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      flex: 2;
+      padding: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .form-group output {
+      flex: 1;
+      padding: 5px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    .form-group input[type="checkbox"] {
+      width: auto;
+    }
+
+    .form-group span {
+      flex: 2;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background-color: #333;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #444;
+    }
+
+    button:focus {
+      outline: none;
+    }
+
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      color: #fff;
+    }
+
+    .success {
+      background-color: #4caf50;
+    }
+
+    .error {
+      background-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Password Generator</h1>
+    <div class="form-group">
+      <label for="length">Number of characters (minimum 12):</label>
+      <input type="number" id="length" min="12" value="12">
+      <output id="length-output">12</output>
+    </div>
+    <div class="form-group">
+      <label for="special">Include special characters:</label>
+      <input type="checkbox" id="special" checked>
+      <span></span>
+    </div>
+    <button id="generate">Generate Password and Copy to Clipboard</button>
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    
+// Get the elements from the document
+const lengthInput = document.getElementById("length");
+const lengthOutput = document.getElementById("length-output");
+const specialInput = document.getElementById("special");
+const generateButton = document.getElementById("generate");
+const messageDiv = document.getElementById("message");
+
+// Define the character sets for the password
+const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const numbers = "0123456789";
+const specialChars = "!@#$%^&*()_+-=[]{};:'\"\\|,.<>/?`~";
+
+// Update the output element when the input element changes
+lengthInput.addEventListener("input", function() {
+  lengthOutput.value = lengthInput.value;
+});
+
+// Generate and copy the password when the button is clicked
+generateButton.addEventListener("click", function() {
+  
+// Get the length and special characters options from the inputs
+let length = parseInt(lengthInput.value);
+let special = specialInput.checked;
+
+// Validate the length input
+if (isNaN(length) || length < 12) {
+
+// Show an error message and return
+messageDiv.textContent = "Please enter a valid number of characters (at least 12).";
+messageDiv.classList.add("error");
+messageDiv.classList.remove("success");
+return;
+}
+
+// Initialize the password and the character set variables
+let password = "";
+let charSet = lowerCase + upperCase + numbers;
+
+// Add the special characters to the character set if checked
+if (special) {
+charSet += specialChars;
+}
+
+// Loop through the length and append a random character from the character set to the password
+for (let i = 0; i < length; i++) {
+let randomIndex = Math.floor(Math.random() * charSet.length);
+password += charSet[randomIndex];
+}
+
+// Copy the password to the clipboard using the navigator.clipboard API
+navigator.clipboard.writeText(password)
+.then(() => {
+  
+// Show a success message
+messageDiv.textContent = "Password copied to clipboard!";
+messageDiv.classList.add("success");
+messageDiv.classList.remove("error");
+})
+.catch(() => {
+  
+// Show an error message
+messageDiv.textContent = "Failed to copy password to clipboard.";
+messageDiv.classList.add("error");
+messageDiv.classList.remove("success");
+});
+});
+  </script>
+</body>
+</html>
