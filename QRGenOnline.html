@@ -30,22 +30,26 @@
   <div id="qrcode"></div>
   <button id="save" onclick="saveQRCode()" style="display:none">Save as PNG</button>
   <script>
-    function generateQRCode() {
-      var input = document.getElementById("input").value;
-      if (input) {
-        var qrcode = new QRCode("qrcode", {
-          text: input,
-          width: 400,
-          height: 400,
-          colorDark : "#000000",
-          colorLight : "#ffffff",
-          correctLevel : QRCode.CorrectLevel.H
-        });
-        document.getElementById("save").style.display = "block";
-      } else {
-        alert("Please enter something");
-      }
-    }
+	function generateQRCode() {
+	  var input = document.getElementById("input").value;
+	  if (input) {
+		var qrcodeContainer = document.getElementById("qrcode");
+		qrcodeContainer.innerHTML = ''; // Clear any previously displayed element
+		
+		var qrcode = new QRCode(qrcodeContainer, {
+		  text: input,
+		  width: 400,
+		  height: 400,
+		  colorDark : "#000000",
+		  colorLight : "#ffffff",
+		  correctLevel : QRCode.CorrectLevel.H
+		});
+		
+		document.getElementById("save").style.display = "block";
+	  } else {
+		alert("Please enter something");
+	  }
+	}
 
     function saveQRCode() {
       var canvas = document.getElementById("qrcode").getElementsByTagName("canvas")[0];
