@@ -1,6 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <style>
+    /* Use Roboto font from Google Fonts */
+    @import url('https://fonts.googleapis.com/css?family=Roboto');
+    
+    /* Set the background color of the body */
+    body {
+      background-color: #F5F5F5;
+    }
+    
+    /* Set the font family, size, color, and alignment of the text */
+    p {
+      font-family: 'Roboto', sans-serif;
+      font-size: 16px;
+      color: #212121;
+      text-align: center;
+    }
+    
+    /* Add some margin and padding around the text */
+    .container {
+      margin: 20px;
+      padding: 20px;
+    }
+    
+    /* Add a border and a box shadow around the text */
+    .card {
+      border: 1px solid #BDBDBD;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 </head>
@@ -10,6 +39,17 @@
       <a href="#" class="brand-logo center">Jiexun's Web Apps</a>
     </div>
   </nav>
+
+  <body>
+    <div class="container">
+    <div class="card">
+    <p>
+    Welcome to my website! Here are some of my web apps and python scripts. I hope you find them useful!
+    </p>
+    </div>
+    </div>
+    </body>
+
   <div class="container">
     <p class="flow-text">Mini-Tools</p>
     <ul class="collection">
@@ -19,6 +59,13 @@
       <li class="collection-item"><a href="NEAForecastMaterial.html">NEA Weather Forecast and PSI</a></li>
       <li class="collection-item"><a href="QRGenOnline.html">QR Code Generator</a></li>
 	  <li class="collection-item"><a href="RanGrouping.html">Student Groups Generator</a></li>
+    </ul>
+  </div>
+
+  <div class="container">
+    <p class="flow-text">Python Scripts</p>
+    <ul class="collection">
+      <li class="collection-item"><a href="Plotter.py">Currency Converter</a></li>
     </ul>
   </div>
 
