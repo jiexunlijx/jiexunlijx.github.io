@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<button onclick="window.location.href='index.html';"> Home </button>
+    <title>Image Resizer</title>
+    <style>
+        /* Adding some basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+
+        input {
+            margin: 10px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+            background-color: lightblue;
+            border: none;
+            cursor: pointer;
+        }
+
+        #message {
+            color: green;
+        }
+
+        #error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Resizer</h1>
+    <form id="form">
+        <div>
+            <label for="file">Select an image file:</label>
+            <input type="file" id="file" accept="image/*">
+        </div>
+        <div>
+            <label for="width">Enter the number of horizontal pixels:</label>
+            <input type="number" id="width" min="1">
+        </div>
+        <div>
+            <label for="height">Enter the number of vertical pixels:</label>
+            <input type="number" id="height" min="1">
+        </div>
+        <div>
+            <label for="percentage">Enter the percentage:</label>
+            <input type="number" id="percentage" min="1" max="100">
+        </div>
+        <button type="submit" id="resize">Resize</button>
+    </form>
+    <!-- Creating a canvas element to draw the resized image -->
+    <canvas id="canvas"></canvas>
+    <!-- Creating a paragraph element to show the message -->
+    <p id="message"></p>
+    <!-- Creating a paragraph element to show the error -->
+    <p id="error"></p>
+
+    <!-- Adding the JavaScript code -->
+    <script>
+        // Getting the elements from the document
+        const file = document.getElementById("file");
+        const width = document.getElementById("width");
+        const height = document.getElementById("height");
+        const percentage = document.getElementById("percentage");
+        const resize = document.getElementById("resize");
+        const canvas = document.getElementById("canvas");
+        const message = document.getElementById("message");
+        const error = document.getElementById("error");
+
+        // Adding an event listener to the resize button
+        resize.addEventListener("click", function(event) {
+            // Preventing the default form submission
+            event.preventDefault();
+            // Clearing any previous message or error
+            message.textContent = "";
+            error.textContent = "";
+            // Checking if the user selected a file
+            if (file.files.length > 0) {
+                // Getting the file object
+                const imageFile = file.files[0];
+                // Creating a file reader object
+                const reader = new FileReader();
+                // Adding an event listener to the reader load event
+                reader.addEventListener("load", function() {
+                    // Getting the image data URL from the reader result
+                    const imageDataURL = reader.result;
+                    // Creating an image object
+                    const image = new Image();
+                    // Adding an event listener to the image load event
+                    image.addEventListener("load", function() {
+                        // Getting the original size of the image
+                        const originalWidth = image.width;
+                        const originalHeight = image.height;
+                        // Declaring variables for the new size of the image
+                        let newWidth, newHeight;
+                        // Checking if the user entered a percentage
+                        if (percentage.value) {
+                            // Converting the percentage to a decimal
+                            const percent = parseFloat(percentage.value) / 100;
+                            // Calculating the new size based on the percentage
+                            newWidth = Math.round(originalWidth * percent);
+                            newHeight = Math.round(originalHeight * percent);
+                        }
+                        // Checking if the user entered a width and height
+                        else if (width.value && height.value) {
+                            // Converting the width and height to integers
+                            newWidth = parseInt(width.value);
+                            newHeight = parseInt(height.value);
+                        }
+                        // If none of the above are entered, show an error message
+                        else {
+                            error.textContent = "Please enter either a percentage or a width and height";
+                            return;
+                        }
+                        // Setting the canvas size to the new size of the image
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        // Getting the canvas context object
+                        const context = canvas.getContext("2d");
+                        // Drawing the resized image on the canvas
+                        context.drawImage(image, 0, 0, newWidth, newHeight);
+                        // Getting the canvas data URL
+                        const canvasDataURL = canvas.toDataURL();
+                        // Creating a link element
+                        const link = document.createElement("a");
+                        // Setting the link href to the canvas data URL
+                        link.href = canvasDataURL;
+                        // Setting the link download attribute to resized_image.jpg
+                        link.download = "resized_image.jpg";
+                        // Adding the link to the document body
+                        document.body.appendChild(link);
+                        // Clicking the link to download the resized image
+                        link.click();
+                        // Removing the link from the document body
+                        document.body.removeChild(link);
+                        // Showing a success message
+                        message.textContent = "Image resized successfully and downloaded as resized_image.jpg";
+                    });
+                    // Setting the image source to the image data URL
+                    image.src = imageDataURL;
+                });
+                // Reading the file as a data URL
+                reader.readAsDataURL(imageFile);
+            }
+            // If no file is selected, show an error message
+            else {
+                error.textContent = "Please select an image file";
+            }
+        });
+    </script>
+</body>
+</html>

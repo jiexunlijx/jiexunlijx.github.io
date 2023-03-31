@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <button onclick="window.location.href='index.html';"> Home </button>
+    <title>CSV Plotter</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+      let data = {x: [], y: []};
+
+      function loadCSV() {
+        const fileInput = document.getElementById("csvFile");
+        const file = fileInput.files[0];
+
+        if (file.type !== "text/csv") {
+          alert("Please select a CSV file.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function() {
+          const csvData = reader.result;
+          processData(csvData);
+        };
+        reader.readAsText(file);
+      }
+
+      function processData(csvData) {
+        const rows = csvData.split("\n");
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i].split(",");
+          data.x.push(parseFloat(row[0]));
+          data.y.push(parseFloat(row[1]));
+        }
+      }
+
+      function plotData() {
+        const xLabel = document.getElementById("xLabel").value;
+        const yLabel = document.getElementById("yLabel").value;
+
+        if (data.x.length === 0 || data.y.length === 0) {
+          alert("Please select a CSV file.");
+          return;
+        }
+
+        const plotData = [
+          {
+            x: data.x,
+            y: data.y,
+            type: "scatter"
+          }
+        ];
+
+        const layout = {
+          xaxis: {
+            title: xLabel
+          },
+          yaxis: {
+            title: yLabel
+          }
+        };
+
+        Plotly.newPlot("plotArea", plotData, layout);
+      }
+
+      function clearPlot() {
+        data = {x: [], y: []};
+        Plotly.purge("plotArea");
+        document.getElementById("xLabel").value = "";
+        document.getElementById("yLabel").value = "";
+      }
+    </script>
+  </head>
+  <body>
+    <h1>CSV Plotter</h1>
+    <label for="csvFile">Select a CSV file:</label>
+    <input type="file" id="csvFile" accept=".csv" onchange="loadCSV()">
+    <br><br>
+    <label for="xLabel">Rename X-axis:</label>
+    <input type="text" id="xLabel">
+    <br><br>
+    <label for="yLabel">Rename Y-axis:</label>
+    <input type="text" id="yLabel">
+    <br><br>
+    <button onclick="plotData()">Plot</button>
+    <button onclick="clearPlot()">Clear</button>
+    <br><br>
+    <div id="plotArea"></div>
+  </body>
+</html>

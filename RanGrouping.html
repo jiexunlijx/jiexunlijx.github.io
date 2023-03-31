@@ -1,0 +1,155 @@
+<html>
+<head>
+  <button onclick="window.location.href='index.html';"> Home </button>
+  <script>
+    // This function validates the input fields and calls the grouping function
+    function generateGrouping() {
+      // Get the input values
+      var numGroups = document.getElementById("numGroups").value;
+      var numStudents = document.getElementById("numStudents").value;
+      var names = document.getElementById("names").value.split("\n");
+
+      // Check if both fields are entered or none are entered
+      if ((numGroups && numStudents) || (!numGroups && !numStudents)) {
+        alert("Please enter either number of groups or number of students per group, not both or none.");
+        return;
+      }
+
+      
+      // Check if the number of names is enough for the grouping
+      if (numGroups * numStudents > names.length) {
+        alert("Please enter more names to fill the groups.");
+        return;
+      }
+
+      // Call the grouping function and display the result
+      var groups = groupNames(names, numGroups, numStudents);
+      displayGroups(groups);
+    }
+
+    // This function randomly assigns names to groups
+    function groupNames(names, numGroups, numStudents) {
+      // Shuffle the names array using Fisher-Yates algorithm
+      for (var i = names.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = names[i];
+        names[i] = names[j];
+        names[j] = temp;
+      }
+
+      // Create an array of groups
+      var groups = [];
+
+      // If the number of groups is given, divide the names into equal groups
+      if (numGroups) {
+        var groupSize = Math.floor(names.length / numGroups);
+        var remainder = names.length % numGroups;
+        var index = 0;
+        for (var i = 0; i < numGroups; i++) {
+          var group = [];
+          for (var j = 0; j < groupSize; j++) {
+            group.push(names[index]);
+            index++;
+          }
+          // If there are extra names, add one to each group until none left
+          if (remainder > 0) {
+            group.push(names[index]);
+            index++;
+            remainder--;
+          }
+          groups.push(group);
+        }
+      }
+
+      // If the number of students per group is given, divide the names into groups of that size
+      if (numStudents) {
+        var index = 0;
+        while (index < names.length) {
+          var group = [];
+          for (var i = 0; i < numStudents && index < names.length; i++) {
+            group.push(names[index]);
+            index++;
+          }
+          groups.push(group);
+        }
+      }
+
+      return groups;
+    }
+
+    // This function displays the groups in a table and enables the download button
+    function displayGroups(groups) {
+      // Get the table element and clear its content
+      var table = document.getElementById("table");
+      table.innerHTML = "";
+
+      // Create a table row for each group
+      for (var i = 0; i < groups.length; i++) {
+        var row = document.createElement("tr");
+        // Create a table cell for the group number
+        var cell = document.createElement("td");
+        cell.textContent = "Group " + (i + 1);
+        row.appendChild(cell);
+        // Create a table cell for each name in the group
+        for (var j = 0; j < groups[i].length; j++) {
+          var cell = document.createElement("td");
+          cell.textContent = groups[i][j];
+          row.appendChild(cell);
+        }
+        table.appendChild(row);
+      }
+
+      // Enable the download button and set its onclick function
+      var button = document.getElementById("download");
+      button.disabled = false;
+      button.onclick = function() {
+        downloadCSV(groups);
+      };
+    }
+
+    // This function converts the groups to a csv format and downloads it as a file
+    function downloadCSV(groups) {
+      // Create a csv string from the groups array
+      var csv = "";
+      for (var i = 0; i < groups.length; i++) {
+        csv += "Group " + (i + 1) + ",";
+        csv += groups[i].join(",");
+        csv += "\n";
+      }
+
+      // Create a blob object from the csv string
+      var blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+
+      // Create a URL for the blob object
+      var url = URL.createObjectURL(blob);
+
+      // Create a link element and set its attributes
+      var link = document.createElement("a");
+      link.href = url;
+      link.download = "groups.csv";
+
+      // Append the link to the document and click it
+      document.body.appendChild(link);
+      link.click();
+
+      // Remove the link from the document and revoke the URL
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      }
+</script>
+</head>
+<body>
+<h1>Grouping Generator</h1>
+<p>Enter either number of groups or number of students per group, not both or none.</p>
+<p>Enter one name per line in the text area.</p>
+<label for="numGroups">Number of groups:</label>
+<input type="number" id="numGroups" min="1"><br>
+<label for="numStudents">Number of students per group:</label>
+<input type="number" id="numStudents" min="1"><br>
+<label for="names">Names:</label><br>
+<textarea id="names" rows="10" cols="30"></textarea><br>
+<button id="generate" onclick="generateGrouping()">Generate Grouping</button>
+<button id="download" disabled>Download as CSV</button>
+<table id="table"></table>
+</body>
+</html>
