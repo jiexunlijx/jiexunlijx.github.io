@@ -39,29 +39,29 @@
         .then(data => displayPSIData(data));
     }
 
-// Define an array of weekday names
-const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    // Define an array of weekday names
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// Define functions to display data on the webpage
-function displayWeatherData(data) {
-  const forecast = data.items[0].forecasts;
-  const forecastList = document.createElement("ul");
-  forecastList.className = "data-list";
-  forecast.forEach(day => {
-    // Create a new Date object from the date string
-    const date = new Date(day.date);
-    // Get the day of the week as a number (0-6)
-    const dayOfWeek = date.getDay();
-    // Get the corresponding weekday name from the array
-    const weekdayName = weekdays[dayOfWeek];
-    // Display the date, weekday name and forecast
-    const listItem = document.createElement("li");
-    listItem.textContent = `${day.date} (${weekdayName}): ${day.forecast}`;
-    forecastList.appendChild(listItem);
-  });
-  clearPreviousData();
-  document.body.appendChild(forecastList);
-}
+    // Define functions to display data on the webpage
+    function displayWeatherData(data) {
+      const forecast = data.items[0].forecasts;
+      const forecastList = document.createElement("ul");
+      forecastList.className = "data-list";
+      forecast.forEach(day => {
+        // Create a new Date object from the date string
+        const date = new Date(day.date);
+        // Get the day of the week as a number (0-6)
+        const dayOfWeek = date.getDay();
+        // Get the corresponding weekday name from the array
+        const weekdayName = weekdays[dayOfWeek];
+        // Display the date, weekday name and forecast
+        const listItem = document.createElement("li");
+        listItem.textContent = `${day.date} (${weekdayName}): ${day.forecast}`;
+        forecastList.appendChild(listItem);
+      });
+      clearPreviousData();
+      document.body.appendChild(forecastList);
+    }
 
     function displayPSIData(data) {
       const readings = data.items[0].readings.psi_twenty_four_hourly;
@@ -86,7 +86,7 @@ function displayWeatherData(data) {
   </script>
 </head>
 <body>
-  <h1>Weather and PSI</h1>
+  <h1>NEA Weather Forecase and PSI</h1>
   <button onclick="getWeatherData()">Get next 4 days weather forecast</button>
   <button onclick="getPSIData()">Get current PSI reading</button>
 </body>
