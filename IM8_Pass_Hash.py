@@ -22,6 +22,8 @@ def main():
 
     #passing checked password into salting function which generates random salt and salted hash for storage
     salt, salted = salting(pwd)
+    print (salt)
+    print (salted)
     
     #writing to csv file as example. Actual implementation would be to write to an encrypted database
     with open("password.csv", "a") as csvfile:
