@@ -96,8 +96,11 @@
     }
   </style>
 </head>
-<body>
+<body> 
   <div class="container">
+    <button onclick="window.location.href='index.html';"> Home </button>
+    <br>
+    <br>
     <h1>Password Generator</h1>
     <div class="form-group">
       <label for="length">Number of characters (minimum 12):</label>
@@ -113,8 +116,7 @@
     <div id="message" class="message"></div>
   </div>
 
-  <script>
-    
+  <script>    
 // Get the elements from the document
 const lengthInput = document.getElementById("length");
 const lengthOutput = document.getElementById("length-output");
