@@ -21,16 +21,17 @@ def main():
         pass
 
     #passing checked password into salting function which generates random salt and salted hash for storage
-    salt, salted = salting(pwd)
+    salt, salted, iterations = salting(pwd)
     print (salt)
     print (salted)
-    
+    print (iterations)
+
     #writing to csv file as example. Actual implementation would be to write to an encrypted database
     with open("password.csv", "a") as csvfile:
         #define fieldnames
-        writefile = csv.DictWriter(csvfile, fieldnames=["username", "salt", "salted"])
+        writefile = csv.DictWriter(csvfile, fieldnames=["username", "salt", "salted", "iterations"])
         #write row in the new file
-        writefile.writerow({"username": username, "salt": salt, "salted": salted})
+        writefile.writerow({"username": username, "salt": salt, "salted": salted, "iterations": iterations})
 
 #checks password strength for minimum length, numbers, and upper and lower cases
 def userinput(a):
@@ -71,7 +72,7 @@ def userinput(a):
 
 def salting(password):
     # Define the output length in bytes
-    length = 8
+    length = 16
 
     # Generate a random key and entropy input using os.urandom ()
     key = os.urandom(32)
@@ -83,19 +84,21 @@ def salting(password):
     # Update the HMAC object with the entropy input
     hmac_obj.update(entropy)
 
-    # Generate a 64 bit salt by taking the first 8 bytes of the HMAC digest
+    # Generate a 128 bit salt by taking the first 16 bytes of the HMAC digest
     salt = hmac_obj.digest()[:length]
 
     # Define the number of iterations and the output length
-    iterations = 100000
-    hash_length = 32
+    iterations = 1000000
+    hash_length = 64
 
-    #Digest the password
+    # Digest the password
     digested = password.encode("utf-8")
 
-    #Generates the salted hash
+    # Generates the salted hash
     salted = hashlib.pbkdf2_hmac("sha256", digested, salt, iterations, hash_length)
-    return salt, salted
+
+    # Return the salt, the salted hash as hexadecimal strings, and the number of iterations
+    return salt.hex(), salted.hex(), str(iterations)
 
 
 if __name__ == "__main__":
