@@ -4,6 +4,7 @@ import hashlib
 import getpass
 import csv
 import os
+import re
 
 def main():
     #obtain user information. check validity of password.
@@ -46,8 +47,8 @@ def userinput(a):
     for e in a:
         if e.isalpha() == False:
             d=d+1
-    if d == 0:
-        print ("Password does not contain numbers. Please try again")
+    if d < 2:
+        print ("Password has less than 2 numbers. Please try again")
         main()
 
     #check for upper and lower cases
@@ -56,15 +57,20 @@ def userinput(a):
     for e in a:
         if e.isupper():
             d += 1
-    if d == 0 :
-        print ("Password does not contain upper cases. Please try again")
+    if d < 2 :
+        print ("Password has less than 2 upper cases. Please try again")
         main()
 
     for f in a:
         if f.islower():
             g += 1
-    if g == 0 :
-        print ("Password does not contain lower cases. Please try again")
+    if g < 2 :
+        print ("Password has less than 2 lower cases. Please try again")
+        main()
+    
+    #check for special characters
+    if re.search('[!@#$%^&*(),.?":{}|<>]', a) < 2:
+        print ("Password has less than 2 special characters. Please try again")
         main()
 
     #return value to main()
