@@ -14,6 +14,8 @@ transform = transforms.Compose([
 ])
 
 # Load the CIFAR-10 dataset
+# It's also important to note that increasing the batch size does not always lead to better performance. In some cases, smaller batch sizes can lead to better generalization and lower test error
+# especially if the network is well-regularized and the dataset is not too large.
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=100,
@@ -32,12 +34,12 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        #convolutional layer 1
+        # convolutional layer 1
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
-        #convolutional layer 2
+        # convolutional layer 2
         self.conv2 = nn.Conv2d(6, 16, 5)
-        #Initial settings: 3 fully connected layers with 120, 84, and 10 neurons respectively. The final layer outputs 10 values for the 10 classes. The first layer takes the output of the second convolutional layer as input. 45%
+        # Initial settings: 3 fully connected layers with 120, 84, and 10 neurons respectively. The final layer outputs 10 values for the 10 classes. The first layer takes the output of the second convolutional layer as input. 45%
         # Adjust settings for trial and error. Adding fully connected layers may lead to overfitting. Introduce dropout layers may prevent overfitting
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)        
@@ -59,12 +61,14 @@ class Net(nn.Module):
 net = Net()
 
 # Define the loss function and optimizer using stochastic gradient descent
+# The loss function is the cross entropy loss function. It is commonly used for multi-class classification problems like in this scenario
 criterion = nn.CrossEntropyLoss()
+#optimizer uses the PyTorch SGD optimizer. Adjust the learning rate and momentum as necessary to improve results
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # Train the network
 if __name__ == "__main__":
-    #define number of epochs, adjust as necessary to improve results
+    # Define number of epochs, adjust as necessary to improve results
     num_epochs = 20
 
     for epoch in range(num_epochs):
