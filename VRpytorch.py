@@ -8,8 +8,11 @@ import torch.optim as optim
 # Normalize the dataset. This converts the input image into a tensor and normalizes it to a range of [-1, 1] from the RGB values of 0 to 255. This is done to improve the performance of the network
 # The mean and standard deviation are calculated from the training dataset. The mean and standard deviation are used to normalize the test dataset. This is done to ensure that the test dataset is normalized in the same way as the training dataset
 transform = transforms.Compose([
+    #randomly flips the image horizontally with a probability of 0.5. This is done to mitigate overfitting by increasing the diversity of training data
     transforms.RandomHorizontalFlip(),
+    #randomly crops the image to 32x32 pixels. This is done to mitigate overfitting by increasing the diversity of training data. Padding is added to retain the original image size
     transforms.RandomCrop(32, padding=4),
+    #converts the image to a tensor, a multi-dimensional numerical matrix that can be used as input to a neural network
     transforms.ToTensor(),
     # TheThe first tuple (0.5, 0.5, 0.5) represents the mean values for each of the three color channels (red, green, and blue) in the input image. 
     # These values are subtracted from each pixel value in the corresponding channel of the input image to center the data around zero.
@@ -58,6 +61,7 @@ class Net(nn.Module):
         self.dropout = nn.Dropout(p=0.25)   
 
     def forward(self, x):
+        # ReLU activation function is used to introduce non-linearity into the network. It is commonly used in deep learning models        
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         x = x.view(-1, 16 * 5 * 5)
@@ -66,6 +70,8 @@ class Net(nn.Module):
         # introduce dropout layer if needed. In general, it's common to introduce dropout after the fully connected layers or after the convolutional layers.
         # x = self.dropout(x)        
         x = self.fc3(x)
+        # softmax activation function is used to convert the output of the network into a probability distribution over the 10 classes. softmax activation makes training worse here. To solve....
+        #x = F.softmax(x, dim=1)
         return x
 
 net = Net()
@@ -73,7 +79,7 @@ net = Net()
 # Define the loss function and optimizer using stochastic gradient descent
 # The loss function is the cross entropy loss function. It is commonly used for multi-class classification problems like in this scenario
 criterion = nn.CrossEntropyLoss()
-#optimizer uses the PyTorch SGD optimizer. Adjust the learning rate and momentum as necessary to improve results
+#optimizer uses the PyTorch SGD optimizer. Adjust the learning rate and momentum as necessary to improve results. Increasing the number is not always better.
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # Train the network
