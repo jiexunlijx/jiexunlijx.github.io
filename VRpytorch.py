@@ -7,10 +7,6 @@ import torch.optim as optim
 
 # Normalize the dataset. This converts the input image into a tensor and normalizes it to a range of [-1, 1] from the RGB values of 0 to 255. This is done to improve the performance of the network
 # The mean and standard deviation are calculated from the training dataset. The mean and standard deviation are used to normalize the test dataset. This is done to ensure that the test dataset is normalized in the same way as the training dataset
-# The mean and standard deviation are calculated as follows:
-# mean = (R + G + B) / 3
-# std = sqrt(((R - mean)^2 + (G - mean)^2 + (B - mean)^2) / 3)
-# The mean and standard deviation are calculated for each channel (R, G, B) and then averaged to get the final mean and standard deviation
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.RandomCrop(32, padding=4),
