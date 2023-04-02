@@ -107,83 +107,93 @@
       <input type="number" id="length" min="12" value="12">
       <output id="length-output">12</output>
     </div>
-    <div class="form-group">
-      <label for="special">Include special characters:</label>
-      <input type="checkbox" id="special" checked>
-      <span></span>
-    </div>
+
     <button id="generate">Generate Password and Copy to Clipboard</button>
     <div id="message" class="message"></div>
   </div>
 
   <script>    
-// Get the elements from the document
-const lengthInput = document.getElementById("length");
-const lengthOutput = document.getElementById("length-output");
-const specialInput = document.getElementById("special");
-const generateButton = document.getElementById("generate");
-const messageDiv = document.getElementById("message");
-
-// Define the character sets for the password
-const lowerCase = "abcdefghijklmnopqrstuvwxyz";
-const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const numbers = "0123456789";
-const specialChars = "!@#$%^&*()_+-=[]{};:'\"\\|,.<>/?`~";
-
-// Update the output element when the input element changes
-lengthInput.addEventListener("input", function() {
-  lengthOutput.value = lengthInput.value;
-});
-
-// Generate and copy the password when the button is clicked
-generateButton.addEventListener("click", function() {
-  
-// Get the length and special characters options from the inputs
-let length = parseInt(lengthInput.value);
-let special = specialInput.checked;
-
-// Validate the length input
-if (isNaN(length) || length < 12) {
-
-// Show an error message and return
-messageDiv.textContent = "Please enter a valid number of characters (at least 12).";
-messageDiv.classList.add("error");
-messageDiv.classList.remove("success");
-return;
-}
-
-// Initialize the password and the character set variables
-let password = "";
-let charSet = lowerCase + upperCase + numbers;
-
-// Add the special characters to the character set if checked
-if (special) {
-charSet += specialChars;
-}
-
-// Loop through the length and append a random character from the character set to the password
-for (let i = 0; i < length; i++) {
-let randomIndex = Math.floor(Math.random() * charSet.length);
-password += charSet[randomIndex];
-}
-
-// Copy the password to the clipboard using the navigator.clipboard API
-navigator.clipboard.writeText(password)
-.then(() => {
-  
-// Show a success message
-messageDiv.textContent = "Password copied to clipboard!";
-messageDiv.classList.add("success");
-messageDiv.classList.remove("error");
-})
-.catch(() => {
-  
-// Show an error message
-messageDiv.textContent = "Failed to copy password to clipboard.";
-messageDiv.classList.add("error");
-messageDiv.classList.remove("success");
-});
-});
-  </script>
+    // Get the elements from the document
+    const lengthInput = document.getElementById("length");
+    const lengthOutput = document.getElementById("length-output");
+    const generateButton = document.getElementById("generate");
+    const messageDiv = document.getElementById("message");
+    
+    // Define the character sets for the password
+    const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    const specialChars = "!@#$%^&*()_+-=[]{};:'\"\\|,.<>/?`~";
+    
+    // Define a function to generate a [random string] of a given length from a given character set
+    function generateRandomString(length, charSet) {
+        let randomString = "";
+        for (let i = 0; i < length; i++) {
+          let randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % charSet.length;
+          randomString += charSet[randomIndex];
+        }
+        return randomString;
+      }
+    
+    // Update the output element when the input element changes
+    lengthInput.addEventListener("input", function() {
+      lengthOutput.value = lengthInput.value;
+    });
+    
+    // Generate and copy the password when the button is clicked
+    generateButton.addEventListener("click", function() {
+      
+      // Get the [length option] from the input
+      let length = parseInt(lengthInput.value);
+    
+      // Validate the length input
+      if (isNaN(length) || length < 12) {
+        // Show an error message and return
+        messageDiv.textContent = "Please enter a valid number of characters (at least 12).";
+        messageDiv.classList.add("error");
+        messageDiv.classList.remove("success");
+        return;
+      }
+    
+      // Initialize the password and the character set variables
+      let password = "";
+      let charSet = "";
+    
+      // Select 2 [random characters] from each character set
+      charSet += generateRandomString(2, lowerCase);
+      charSet += generateRandomString(2, upperCase);
+      charSet += generateRandomString(2, numbers);
+      charSet += generateRandomString(2, specialChars);
+    
+      // Generate the remaining characters randomly from any character set
+      charSet += generateRandomString(length - 8, lowerCase + upperCase + numbers + specialChars);
+    
+      // Shuffle the characters in the character set
+      let shuffledCharSet = "";
+      while (charSet.length > 0) {
+        let randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % charSet.length;
+        shuffledCharSet += charSet[randomIndex];
+        charSet = charSet.slice(0, randomIndex) + charSet.slice(randomIndex + 1);
+      }
+    
+      // Set the password to the [shuffled character set]
+      password = shuffledCharSet;
+    
+      // Copy the password to the clipboard using the navigator.clipboard API
+      navigator.clipboard.writeText(password)
+      .then(() => {
+        // Show a success message
+        messageDiv.textContent = "Password copied to clipboard!";
+        messageDiv.classList.add("success");
+        messageDiv.classList.remove("error");
+      })
+      .catch(() => {
+        // Show an error message
+        messageDiv.textContent = "Failed to copy password to clipboard.";
+        messageDiv.classList.add("error");
+        messageDiv.classList.remove("success");
+      });
+    });
+    </script>
 </body>
 </html>
