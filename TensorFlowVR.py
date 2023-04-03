@@ -46,6 +46,13 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 # Train the model. Set number of epochs to train. The Adam optimizer will adaptively adjust learning rate and momentum
+try:  
+    model = tf.keras.models.load_model('cifar10_model.h5')
+    print("Model loaded")
+    time.sleep(1)
+except:
+  pass
+
 history = model.fit(X_train, y_train, epochs=15, validation_data=(X_test, y_test))
 
 # Evaluate the model
@@ -67,7 +74,7 @@ sav = input ("Save trained model? (y/n): ")
 if sav == "y" or sav == "Y" or sav == "yes" or sav == "Yes" or sav == "YES":
   model.save('cifar10_model.h5')
   print("Model saved as cifar10_model.h5")
-  time.sleep(2)
+  time.sleep(1)
 else:
   print("Model not saved")
   time.sleep(1)
