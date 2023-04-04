@@ -1,0 +1,10 @@
+#instructions for using Whisper on Google Collaboratory
+#install Whisper
+!pip install git+https://github.com/openai/whisper.git
+#install ffmpeh for mp3 suppoer
+!sudo apt update && sudo apt install ffmpeg
+#upload your mp3 file and run medium.en model
+!whisper "Test.mp3" --model medium.en
+
+#for additional arguments/parameters
+!whisper -h
