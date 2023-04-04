@@ -57,7 +57,10 @@ class Transformer(nn.Module):
         # Linear layer to generate output predictions
         output = self.linear(decoder_output)
         return output
-    
+
+# manually implement a sinusoidal positional encoding that accounts for variable sequence lengths
+# GPT-3 uses learned positional embeddings, but GPT-1 and 2 used sinusoidal positional encoding
+# library implementation may require setting max_seq_len as a parameter
 def positional_encoding(x):
     # Create a positional encoding matrix
     seq_len, hidden_dim = x.shape[1], x.shape[2]
