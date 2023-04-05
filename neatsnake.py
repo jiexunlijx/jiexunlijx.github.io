@@ -78,9 +78,7 @@ class Food:
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
-        genome.fitness = 0.0
-        best = neat.Genome(-1, None, 1, 0)
-        best.fitness = float('-inf')        
+        genome.fitness = 0.0     
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
         snake = Snake()
