@@ -83,17 +83,33 @@
       var table = document.getElementById("table");
       table.innerHTML = "";
 
-      // Create a table row for each group
+      // Create the header row with group numbers
+      var headerRow = document.createElement("tr");
       for (var i = 0; i < groups.length; i++) {
-        var row = document.createElement("tr");
-        // Create a table cell for the group number
-        var cell = document.createElement("td");
+        var cell = document.createElement("th");
         cell.textContent = "Group " + (i + 1);
-        row.appendChild(cell);
-        // Create a table cell for each name in the group
-        for (var j = 0; j < groups[i].length; j++) {
+        headerRow.appendChild(cell);
+      }
+      table.appendChild(headerRow);
+
+      // Find the maximum group size
+      var maxGroupSize = 0;
+      for (var i = 0; i < groups.length; i++) {
+        if (groups[i].length > maxGroupSize) {
+          maxGroupSize = groups[i].length;
+        }
+      }
+
+      // Create table rows for each name in the groups
+      for (var i = 0; i < maxGroupSize; i++) {
+        var row = document.createElement("tr");
+        for (var j = 0; j < groups.length; j++) {
           var cell = document.createElement("td");
-          cell.textContent = groups[i][j];
+          if (groups[j][i]) {
+            cell.textContent = groups[j][i];
+          } else {
+            cell.textContent = "";
+          }
           row.appendChild(cell);
         }
         table.appendChild(row);
@@ -106,7 +122,7 @@
         downloadCSV(groups);
       };
     }
-
+    
     // This function converts the groups to a csv format and downloads it as a file
     function downloadCSV(groups) {
       // Create a csv string from the groups array
