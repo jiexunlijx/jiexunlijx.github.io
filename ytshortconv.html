@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <title>YouTube Un-Shorts URL Converter</title>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import Google Material Design CSS-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Import Google Material Design JS-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+      // This function extracts the video ID from a YouTube URL or a YouTube Shorts URL
+      function getVideoID(url) {
+        var regex = /(?:\?v=|&v=|youtu\.be\/|shorts\/)(.*?)(?:\?|&|$)/;
+        var matches = url.match(regex);
+        if (matches) {
+          return matches[1];
+        } else {
+          return null;
+        }
+      }
+
+      // This function changes the URL to the desired form and copies it to the clipboard
+      function changeURL() {
+        // Get the input element and its value
+        var input = document.getElementById("youtube-url");
+        var url = input.value;
+
+        // Get the video ID from the URL
+        var videoID = getVideoID(url);
+
+        if (videoID) {
+          // Change the URL to the desired form
+          var newURL = "https://youtube.com/watch?v=" + videoID;
+          input.value = newURL;
+
+          // Copy the new URL to the clipboard
+          input.select();
+          document.execCommand("copy");
+
+          // Display a message that the URL has been copied
+          var message = document.getElementById("message");
+          message.innerHTML = "The new URL has been copied to your clipboard.";
+        } else {
+          // Display an error message if the URL is invalid
+          alert("Please enter a valid YouTube URL or a YouTube Shorts URL.");
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-wrapper blue darken-2">
+        <a href="#" class="brand-logo center"><i class="material-icons">play_arrow</i> YouTube Un-Shorts URL Converter</a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row">
+        <div class="col s12">
+          <div class="card">
+            <div class="card-content">
+              <h5>Enter a YouTube URL or a YouTube Shorts URL and press the button to change it to the form https://youtube.com/watch?v='video ID' and copy it to your clipboard.</h5>
+
+              <div class="row">
+                <div class="input-field col s12">
+                  <input id="youtube-url" type="text" class="validate">
+                  <label for="youtube-url">YouTube URL or Shorts URL</label>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col s12">
+                  <button class="waves-effect waves-light btn blue darken-2" onclick="changeURL()"><i class="material-icons left">play_arrow</i>Change URL</button>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col s12">
+                  <p id="message"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
