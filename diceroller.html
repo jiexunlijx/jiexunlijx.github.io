@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabletop Dice Roller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #4ecca3;
+        }
+
+        .dice-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dice-box {
+            background: #232741;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .dice-type {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #4ecca3;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            background: #393e46;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        button {
+            background: #4ecca3;
+            color: #232741;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #45b08f;
+        }
+
+        .results {
+            background: #232741;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .results h2 {
+            color: #4ecca3;
+            margin-bottom: 1rem;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .result-box {
+            background: #393e46;
+            padding: 0.8rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .total {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #393e46;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .dice-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tabletop Dice Roller</h1>
+        
+        <div class="dice-container">
+            <div class="dice-box">
+                <div class="dice-type">D4</div>
+                <input type="number" id="d4" min="0" value="0">
+            </div>
+            <div class="dice-box">
+                <div class="dice-type">D6</div>
+                <input type="number" id="d6" min="0" value="0">
+            </div>
+            <div class="dice-box">
+                <div class="dice-type">D8</div>
+                <input type="number" id="d8" min="0" value="0">
+            </div>
+            <div class="dice-box">
+                <div class="dice-type">D10</div>
+                <input type="number" id="d10" min="0" value="0">
+            </div>
+            <div class="dice-box">
+                <div class="dice-type">D12</div>
+                <input type="number" id="d12" min="0" value="0">
+            </div>
+            <div class="dice-box">
+                <div class="dice-type">D20</div>
+                <input type="number" id="d20" min="0" value="0">
+            </div>
+        </div>
+
+        <button onclick="rollDice()">Roll Dice</button>
+
+        <div class="results" id="results">
+            <h2>Results</h2>
+            <div class="result-grid" id="resultGrid"></div>
+            <div class="total" id="total"></div>
+        </div>
+    </div>
+
+    <script>
+        function rollDice() {
+            const diceTypes = [4, 6, 8, 10, 12, 20];
+            let results = {};
+            let total = 0;
+            
+            // Initialize results object
+            diceTypes.forEach(type => {
+                results[`d${type}`] = new Array(type + 1).fill(0);
+            });
+
+            // Roll dice and count results
+            diceTypes.forEach(type => {
+                const count = parseInt(document.getElementById(`d${type}`).value) || 0;
+                for(let i = 0; i < count; i++) {
+                    const roll = Math.floor(Math.random() * type) + 1;
+                    results[`d${type}`][roll]++;
+                    total += roll;
+                }
+            });
+
+            // Display results
+            const resultGrid = document.getElementById('resultGrid');
+            resultGrid.innerHTML = '';
+
+            for(const [diceType, counts] of Object.entries(results)) {
+                const type = parseInt(diceType.substring(1));
+                let hasRolls = false;
+                
+                for(let i = 1; i <= type; i++) {
+                    if(counts[i] > 0) {
+                        hasRolls = true;
+                        const resultBox = document.createElement('div');
+                        resultBox.className = 'result-box';
+                        resultBox.innerHTML = `
+                            ${diceType}: ${i}<br>
+                            Count: ${counts[i]}
+                        `;
+                        resultGrid.appendChild(resultBox);
+                    }
+                }
+            }
+
+            document.getElementById('total').innerHTML = `Total: ${total}`;
+        }
+
+        // Add input validation
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                if(this.value < 0) this.value = 0;
+                if(this.value > 100) this.value = 100;
+            });
+        });
+    </script>
+</body>
+</html>
