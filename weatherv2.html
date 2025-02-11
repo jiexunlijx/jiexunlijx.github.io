@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore Weather Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .api-card {
+            background: var(--card-background);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .api-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .api-card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        .button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f1f5f9;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: var(--primary-color);
+        }
+
+        /* Specific styles for formatted data */
+        .forecast-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .location {
+            font-weight: bold;
+        }
+
+        .forecast {
+            font-style: italic;
+        }
+
+        .psi-reading {
+            margin-bottom: 0.5rem;
+        }
+
+        .psi-category {
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Singapore Weather Dashboard</h1>
+            <p>Real-time weather information from NEA APIs</p>
+        </header>
+
+        <div class="api-grid">
+            <div class="api-card">
+                <h2>2-Hour Weather Forecast</h2>
+                <button class="button" onclick="fetch2HourForecast()">Get Forecast</button>
+                <div id="forecast2h-loading" class="loading">Loading...</div>
+                <div id="forecast2h-result" class="result"></div>
+            </div>
+
+            <div class="api-card">
+                <h2>24-Hour Weather Forecast</h2>
+                <button class="button" onclick="fetch24HourForecast()">Get Forecast</button>
+                <div id="forecast24h-loading" class="loading">Loading...</div>
+                <div id="forecast24h-result" class="result"></div>
+            </div>
+
+            <div class="api-card">
+                <h2>4-Day Weather Forecast</h2>
+                <button class="button" onclick="fetch4DayForecast()">Get Forecast</button>
+                <div id="forecast4d-loading" class="loading">Loading...</div>
+                <div id="forecast4d-result" class="result"></div>
+            </div>
+
+            <div class="api-card">
+                <h2>Air Quality (PSI)</h2>
+                <button class="button" onclick="fetchPSI()">Get PSI</button>
+                <div id="psi-loading" class="loading">Loading...</div>
+                <div id="psi-result" class="result"></div>
+            </div>
+
+            <div class="api-card">
+                <h2>UV Index</h2>
+                <button class="button" onclick="fetchUV()">Get UV Index</button>
+                <div id="uv-loading" class="loading">Loading...</div>
+                <div id="uv-result" class="result"></div>
+            </div>
+
+            <div class="api-card">
+                <h2>Rainfall Readings</h2>
+                <button class="button" onclick="fetchRainfall()">Get Rainfall</button>
+                <div id="rainfall-loading" class="loading">Loading...</div>
+                <div id="rainfall-result" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to show/hide loading state
+        function setLoading(endpoint, isLoading) {
+            document.getElementById(`${endpoint}-loading`).style.display = isLoading ? 'block' : 'none';
+        }
+
+        // Helper function to handle errors and display a user-friendly message
+        function displayError(endpoint, message) {
+            document.getElementById(`${endpoint}-result`).innerHTML = `<p style="color: red;">Error: ${message}</p>`;
+        }
+
+        // 2-Hour Weather Forecast
+        async function fetch2HourForecast() {
+            const endpoint = 'forecast2h';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/2-hour-weather-forecast');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                display2HourForecast(data);
+            } catch (error) {
+                console.error('Error fetching 2-hour forecast:', error);
+                displayError(endpoint, 'Failed to fetch 2-hour forecast data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+        function display2HourForecast(data) {
+            const forecastDiv = document.getElementById('forecast2h-result');
+            forecastDiv.innerHTML = ''; // Clear previous results
+
+            if (data && data.items && data.items.length > 0) {
+                const forecasts = data.items[0].forecasts;
+                forecasts.forEach(item => {
+                    const forecastItem = document.createElement('div');
+                    forecastItem.classList.add('forecast-item');
+                    forecastItem.innerHTML = `
+                        <span class="location">${item.area}:</span> 
+                        <span class="forecast">${item.forecast}</span>
+                    `;
+                    forecastDiv.appendChild(forecastItem);
+                });
+            } else {
+                forecastDiv.innerHTML = '<p>No forecast data available.</p>';
+            }
+        }
+
+        // 24-Hour Weather Forecast
+        async function fetch24HourForecast() {
+            const endpoint = 'forecast24h';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/24-hour-weather-forecast');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                display24HourForecast(data);
+            } catch (error) {
+                console.error('Error fetching 24-hour forecast:', error);
+                displayError(endpoint, 'Failed to fetch 24-hour forecast data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+        function display24HourForecast(data) {
+			const forecastDiv = document.getElementById('forecast24h-result');
+			forecastDiv.innerHTML = '';
+
+			if (data && data.items && data.items.length > 0) {
+				const forecast = data.items[0];
+				const forecastItem = document.createElement('div');
+				forecastItem.classList.add('forecast-item');
+				forecastItem.innerHTML = `
+					<p><b>General Forecast:</b> ${forecast.general.forecast}</p>
+					<p><b>Temperature:</b> ${forecast.general.temperature.low}°C - ${forecast.general.temperature.high}°C</p>
+					<p><b>Relative Humidity:</b> ${forecast.general.relative_humidity.low}% - ${forecast.general.relative_humidity.high}%</p>
+					<p><b>Wind:</b> ${forecast.general.wind.speed.low} - ${forecast.general.wind.speed.high} km/h, ${forecast.general.wind.direction}</p>
+				`;
+				forecastDiv.appendChild(forecastItem);
+			} else {
+				forecastDiv.innerHTML = '<p>No forecast data available.</p>';
+			}
+		}
+
+
+        // 4-Day Weather Forecast
+        async function fetch4DayForecast() {
+            const endpoint = 'forecast4d';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/4-day-weather-forecast');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                display4DayForecast(data);
+            } catch (error) {
+                console.error('Error fetching 4-day forecast:', error);
+                displayError(endpoint, 'Failed to fetch 4-day forecast data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+		 function display4DayForecast(data) {
+			const forecastDiv = document.getElementById('forecast4d-result');
+			forecastDiv.innerHTML = '';
+
+			if (data && data.items && data.items.length > 0) {
+				const forecasts = data.items[0].forecasts;
+				forecasts.forEach(day => {
+					const forecastItem = document.createElement('div');
+					forecastItem.classList.add('forecast-item');
+					forecastItem.innerHTML = `
+						<p><b>Date:</b> ${day.date}</p>
+						<p><b>Forecast:</b> ${day.forecast}</p>
+						<p><b>Temperature:</b> ${day.temperature.low}°C - ${day.temperature.high}°C</p>
+						<p><b>Wind:</b> ${day.wind.speed.low} - ${day.wind.speed.high} km/h, ${day.wind.direction}</p>
+						<hr>
+					`;
+					forecastDiv.appendChild(forecastItem);
+				});
+			} else {
+				forecastDiv.innerHTML = '<p>No forecast data available.</p>';
+			}
+		}
+
+        // PSI
+        async function fetchPSI() {
+            const endpoint = 'psi';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/psi');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayPSI(data);
+            } catch (error) {
+                console.error('Error fetching PSI:', error);
+                displayError(endpoint, 'Failed to fetch PSI data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+        function displayPSI(data) {
+            const psiDiv = document.getElementById('psi-result');
+            psiDiv.innerHTML = '';
+
+            if (data && data.items && data.items.length > 0) {
+                const readings = data.items[0].readings;
+
+                const regions = ['national', 'central', 'north', 'south', 'east', 'west'];
+
+                regions.forEach(region => {
+                    const psiItem = document.createElement('div');
+                    psiItem.classList.add('psi-reading');
+                    psiItem.innerHTML = `
+                        <p class="psi-category"><b>${region.toUpperCase()}</b></p>
+                        <p><b>PSI (24-hr):</b> ${readings.psi_twenty_four_hourly[region]}</p>
+                        <p><b>PM2.5 (24-hr):</b> ${readings.pm25_twenty_four_hourly[region]}</p>
+                        <hr>
+                    `;
+                    psiDiv.appendChild(psiItem);
+                });
+
+            } else {
+                psiDiv.innerHTML = '<p>No PSI data available.</p>';
+            }
+        }
+
+        // UV Index
+        async function fetchUV() {
+            const endpoint = 'uv';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/uv-index');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayUV(data);
+            } catch (error) {
+                console.error('Error fetching UV Index:', error);
+                displayError(endpoint, 'Failed to fetch UV Index data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+        function displayUV(data) {
+            const uvDiv = document.getElementById('uv-result');
+            uvDiv.innerHTML = '';
+
+            if (data && data.items && data.items.length > 0) {
+                const uvIndex = data.items[0].index[0];
+
+                const uvItem = document.createElement('div');
+                uvItem.classList.add('forecast-item');
+                uvItem.innerHTML = `
+                <p><b>UV Index:</b> ${uvIndex.value}</p>
+                <p><b>Timestamp:</b> ${uvIndex.timestamp}</p>
+            `;
+                uvDiv.appendChild(uvItem);
+
+            } else {
+                uvDiv.innerHTML = '<p>No UV Index data available.</p>';
+            }
+        }
+
+        // Rainfall Readings
+        async function fetchRainfall() {
+            const endpoint = 'rainfall';
+            setLoading(endpoint, true);
+            try {
+                const response = await fetch('https://api.data.gov.sg/v1/environment/rainfall');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayRainfall(data);
+            } catch (error) {
+                console.error('Error fetching Rainfall Readings:', error);
+                displayError(endpoint, 'Failed to fetch Rainfall data.');
+            } finally {
+                setLoading(endpoint, false);
+            }
+        }
+
+        function displayRainfall(data) {
+            const rainfallDiv = document.getElementById('rainfall-result');
+            rainfallDiv.innerHTML = '';
+
+            if (data && data.items && data.items.length > 0) {
+                data.items.forEach(reading => {
+                    const rainfallItem = document.createElement('div');
+                    rainfallItem.classList.add('forecast-item');
+                    rainfallItem.innerHTML = `
+                    <p><b>Station:</b> ${reading.station_id}</p>
+                    <p><b>Rainfall:</b> ${reading.value} mm</p>
+                    <hr>
+                `;
+                    rainfallDiv.appendChild(rainfallItem);
+                });
+            } else {
+                rainfallDiv.innerHTML = '<p>No Rainfall data available.</p>';
+            }
+        }
+
+    </script>
+</body>
+
+</html>
