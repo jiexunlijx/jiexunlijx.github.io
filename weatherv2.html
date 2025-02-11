@@ -160,7 +160,6 @@
                 <div id="forecast4d-loading" class="loading">Loading...</div>
                 <div id="forecast4d-result" class="result"></div>
             </div>
-
             <div class="api-card">
                 <h2>Air Quality (PSI)</h2>
                 <button class="button" onclick="fetchPSI()">Get PSI</button>
@@ -254,24 +253,23 @@
         }
 
         function display24HourForecast(data) {
-			const forecastDiv = document.getElementById('forecast24h-result');
-			forecastDiv.innerHTML = '';
-
-			if (data && data.items && data.items.length > 0) {
-				const forecast = data.items[0];
-				const forecastItem = document.createElement('div');
-				forecastItem.classList.add('forecast-item');
-				forecastItem.innerHTML = `
+            const forecastDiv = document.getElementById('forecast24h-result');
+            forecastDiv.innerHTML = '';
+            if (data && data.items && data.items.length > 0) {
+                const forecast = data.items[0];
+                const forecastItem = document.createElement('div');
+                forecastItem.classList.add('forecast-item');
+                forecastItem.innerHTML = `
 					<p><b>General Forecast:</b> ${forecast.general.forecast}</p>
 					<p><b>Temperature:</b> ${forecast.general.temperature.low}°C - ${forecast.general.temperature.high}°C</p>
 					<p><b>Relative Humidity:</b> ${forecast.general.relative_humidity.low}% - ${forecast.general.relative_humidity.high}%</p>
 					<p><b>Wind:</b> ${forecast.general.wind.speed.low} - ${forecast.general.wind.speed.high} km/h, ${forecast.general.wind.direction}</p>
 				`;
-				forecastDiv.appendChild(forecastItem);
-			} else {
-				forecastDiv.innerHTML = '<p>No forecast data available.</p>';
-			}
-		}
+                forecastDiv.appendChild(forecastItem);
+            } else {
+                forecastDiv.innerHTML = '<p>No forecast data available.</p>';
+            }
+        }
 
 
         // 4-Day Weather Forecast
@@ -293,28 +291,28 @@
             }
         }
 
-		 function display4DayForecast(data) {
-			const forecastDiv = document.getElementById('forecast4d-result');
-			forecastDiv.innerHTML = '';
+        function display4DayForecast(data) {
+            const forecastDiv = document.getElementById('forecast4d-result');
+            forecastDiv.innerHTML = '';
 
-			if (data && data.items && data.items.length > 0) {
-				const forecasts = data.items[0].forecasts;
-				forecasts.forEach(day => {
-					const forecastItem = document.createElement('div');
-					forecastItem.classList.add('forecast-item');
-					forecastItem.innerHTML = `
+            if (data && data.items && data.items.length > 0) {
+                const forecasts = data.items[0].forecasts;
+                forecasts.forEach(day => {
+                    const forecastItem = document.createElement('div');
+                    forecastItem.classList.add('forecast-item');
+                    forecastItem.innerHTML = `
 						<p><b>Date:</b> ${day.date}</p>
 						<p><b>Forecast:</b> ${day.forecast}</p>
 						<p><b>Temperature:</b> ${day.temperature.low}°C - ${day.temperature.high}°C</p>
 						<p><b>Wind:</b> ${day.wind.speed.low} - ${day.wind.speed.high} km/h, ${day.wind.direction}</p>
 						<hr>
 					`;
-					forecastDiv.appendChild(forecastItem);
-				});
-			} else {
-				forecastDiv.innerHTML = '<p>No forecast data available.</p>';
-			}
-		}
+                    forecastDiv.appendChild(forecastItem);
+                });
+            } else {
+                forecastDiv.innerHTML = '<p>No forecast data available.</p>';
+            }
+        }
 
         // PSI
         async function fetchPSI() {
@@ -405,7 +403,7 @@
             const endpoint = 'rainfall';
             setLoading(endpoint, true);
             try {
-                const response = await fetch('https://api.data.gov.sg/v1/environment/rainfall');
+                const response = await fetch('https://api-open.data.gov.sg/v2/real-time/api/rainfall');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -424,21 +422,23 @@
             rainfallDiv.innerHTML = '';
 
             if (data && data.items && data.items.length > 0) {
-                data.items.forEach(reading => {
-                    const rainfallItem = document.createElement('div');
-                    rainfallItem.classList.add('forecast-item');
-                    rainfallItem.innerHTML = `
-                    <p><b>Station:</b> ${reading.station_id}</p>
-                    <p><b>Rainfall:</b> ${reading.value} mm</p>
-                    <hr>
-                `;
-                    rainfallDiv.appendChild(rainfallItem);
+                data.items.forEach(item => {
+                    item.readings.forEach(reading => {
+                        const rainfallItem = document.createElement('div');
+                        rainfallItem.classList.add('forecast-item');
+                        rainfallItem.innerHTML = `
+                            <p><b>Station ID:</b> ${reading.station_id}</p>
+                            <p><b>Amount:</b> ${reading.value} mm</p>
+                            <hr>
+                        `;
+                        rainfallDiv.appendChild(rainfallItem);
+                    });
                 });
+
             } else {
                 rainfallDiv.innerHTML = '<p>No Rainfall data available.</p>';
             }
         }
-
     </script>
 </body>
 
