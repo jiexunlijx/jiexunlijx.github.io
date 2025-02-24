@@ -1,5 +1,6 @@
 <html>
   <style>
+    /* Existing CSS remains unchanged */
     button {
       margin: 10px;
       padding: 10px;
@@ -30,26 +31,51 @@
   <div id="qrcode"></div>
   <button id="save" onclick="saveQRCode()" style="display:none">Save as PNG</button>
   <script>
-	function generateQRCode() {
-	  var input = document.getElementById("input").value;
-	  if (input) {
-		var qrcodeContainer = document.getElementById("qrcode");
-		qrcodeContainer.innerHTML = ''; // Clear any previously displayed element
-		
-		var qrcode = new QRCode(qrcodeContainer, {
-		  text: input,
-		  width: 400,
-		  height: 400,
-		  colorDark : "#000000",
-		  colorLight : "#ffffff",
-		  correctLevel : QRCode.CorrectLevel.H
-		});
-		
-		document.getElementById("save").style.display = "block";
-	  } else {
-		alert("Please enter something");
-	  }
-	}
+    function generateQRCode() {
+      var input = document.getElementById("input").value;
+      if (input) {
+        var qrcodeContainer = document.getElementById("qrcode");
+        qrcodeContainer.innerHTML = '';
+        
+        // Create hidden container for initial QR generation
+        var tempContainer = document.createElement('div');
+        tempContainer.style.display = 'none';
+        document.body.appendChild(tempContainer);
+
+        var qrcode = new QRCode(tempContainer, {
+          text: input,
+          width: 400,
+          height: 400,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Add border after QR generation
+        setTimeout(() => {
+          var canvas = tempContainer.getElementsByTagName('canvas')[0];
+          if (canvas) {
+            // Create new canvas with border
+            const BORDER_SIZE = 40; // 4-module border for 400px QR
+            var borderedCanvas = document.createElement('canvas');
+            borderedCanvas.width = canvas.width + BORDER_SIZE * 2;
+            borderedCanvas.height = canvas.height + BORDER_SIZE * 2;
+            
+            var ctx = borderedCanvas.getContext('2d');
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
+            ctx.drawImage(canvas, BORDER_SIZE, BORDER_SIZE);
+
+            qrcodeContainer.appendChild(borderedCanvas);
+          }
+          document.body.removeChild(tempContainer);
+        }, 100);
+
+        document.getElementById("save").style.display = "block";
+      } else {
+        alert("Please enter something");
+      }
+    }
 
     function saveQRCode() {
       var canvas = document.getElementById("qrcode").getElementsByTagName("canvas")[0];
