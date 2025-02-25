@@ -31,9 +31,12 @@ def main():
         #define fieldnames
         writefile = csv.DictWriter(csvfile, fieldnames=["username", "salt", "salted", "iterations"])
         #write row in the new file
-        writefile.writerow({"username": username, "salt": salt, "salted": salted, "iterations": iterations})
-
-    
+        writefile.writerow({
+            "username": username, 
+            "salt": salt, 
+            "salted": salted, 
+            "iterations": iterations
+        })
 
 #checks password strength for minimum length, numbers, and upper and lower cases
 def userinput(a):
