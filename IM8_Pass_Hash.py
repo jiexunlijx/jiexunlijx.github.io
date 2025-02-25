@@ -4,7 +4,6 @@ import hashlib
 import getpass
 import csv
 import os
-import re
 
 def main():
     #obtain user information. check validity of password.
@@ -23,16 +22,18 @@ def main():
 
     #passing checked password into salting function which generates random salt and salted hash for storage
     salt, salted, iterations = salting(pwd)
-    print (salt)
-    print (salted)
-    print (iterations)
+    print (f'salt:', salt)
+    print (f'salted:', salted)
+    print (f'No. of iterations:', iterations)
 
     #writing to csv file as example. Actual implementation would be to write to an encrypted database
-    with open("password.csv", "a") as csvfile:
+    with open("password.csv", "a", newline="") as csvfile:
         #define fieldnames
         writefile = csv.DictWriter(csvfile, fieldnames=["username", "salt", "salted", "iterations"])
         #write row in the new file
         writefile.writerow({"username": username, "salt": salt, "salted": salted, "iterations": iterations})
+
+    
 
 #checks password strength for minimum length, numbers, and upper and lower cases
 def userinput(a):
@@ -69,7 +70,8 @@ def userinput(a):
         main()
     
     #check for special characters
-    if re.search('[!@#$%^&*(),.?":{}|<>]', a) < 2:
+    special_symbols = "!@#$%^&*()_+-=[]{}|;:'\",.<>?/`~"    
+    if sum(1 for char in a if char in special_symbols) < 2:
         print ("Password has less than 2 special characters. Please try again")
         main()
 
