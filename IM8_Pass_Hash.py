@@ -1,9 +1,9 @@
-#Exmample of salt generation and password hashing using HMAC and PBKDF2 according as per IM8 guidelines
+#Example of salt generation and password hashing using HMAC and PBKDF2 according as per IM8 guidelines
 import hmac
 import hashlib
 import getpass
 import csv
-import os
+import secrets
 
 def main():
     #obtain user information. check validity of password.
@@ -39,55 +39,54 @@ def main():
         })
 
 #checks password strength for minimum length, numbers, and upper and lower cases
-def userinput(a):
-    
+def userinput(password_input):
     #change this line for minimum characters
-    if len(a)<12:
-        print ("Password is too short. Minimum 12 characters")
+    if len(password_input) < 12:
+        print("Password is too short. Minimum 12 characters")
         main()
 
     #check for numbers
-    d = 0
-    for e in a:
-        if e.isalpha() == False:
-            d=d+1
-    if d < 2:
-        print ("Password has less than 2 numbers. Please try again")
+    non_alpha_count = 0
+    for char in password_input:
+        if not char.isalpha():
+            non_alpha_count = non_alpha_count + 1
+    if non_alpha_count < 2:
+        print("Password has less than 2 numbers. Please try again")
         main()
 
     #check for upper and lower cases
-    d = 0
-    g = 0
-    for e in a:
-        if e.isupper():
-            d += 1
-    if d < 2 :
-        print ("Password has less than 2 upper cases. Please try again")
+    upper_count = 0
+    lower_count = 0
+    for char in password_input:
+        if char.isupper():
+            upper_count += 1
+    if upper_count < 2:
+        print("Password has less than 2 upper cases. Please try again")
         main()
 
-    for f in a:
-        if f.islower():
-            g += 1
-    if g < 2 :
-        print ("Password has less than 2 lower cases. Please try again")
+    for char in password_input:
+        if char.islower():
+            lower_count += 1
+    if lower_count < 2:
+        print("Password has less than 2 lower cases. Please try again")
         main()
-    
+
     #check for special characters
-    special_symbols = "!@#$%^&*()_+-=[]{}|;:'\",.<>?/`~"    
-    if sum(1 for char in a if char in special_symbols) < 2:
-        print ("Password has less than 2 special characters. Please try again")
+    special_symbols = "!@#$%^&*()_+-=[]{}|;:'\",.<>?/`~"
+    if sum(1 for char in password_input if char in special_symbols) < 2:
+        print("Password has less than 2 special characters. Please try again")
         main()
 
     #return value to main()
-    return a
+    return password_input
 
 def salting(password):
     # Define the output length in bytes
     length = 16
 
     # Generate a random key and entropy input using os.urandom ()
-    key = os.urandom(32)
-    entropy = os.urandom(32)
+    key = secrets.token_bytes(32)
+    entropy = secrets.token_bytes(32)
 
     # Create an HMAC object with the key and SHA-256 as the hash function
     hmac_obj = hmac.new(key, digestmod=hashlib.sha256)
