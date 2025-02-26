@@ -84,7 +84,7 @@ def salting(password):
     # Define the output length in bytes
     length = 16
 
-    # Generate a random key and entropy input using os.urandom ()
+    # Generate a random key and entropy input using secrets module
     key = secrets.token_bytes(32)
     entropy = secrets.token_bytes(32)
 
