@@ -8,6 +8,14 @@ import re
 
 def main():
     #obtain user information. check validity of password.
+    """
+    Main function to handle user input for username and password, validate password strength,
+    and store the salted hash and salt securely. It prompts the user to enter a username and 
+    a password twice, checks that the passwords match and meet strength requirements. If valid, 
+    it generates a salt and a salted hash using the salting function. The username, salt, 
+    salted hash, and number of iterations are then stored in a CSV file for demonstration 
+    purposes. Actual implementations should use secure databases for storage.
+    """
     username = input("Enter your email ID: ")
     if id_check(username) == False:
         print("Invalid email ID. Please try again.")
