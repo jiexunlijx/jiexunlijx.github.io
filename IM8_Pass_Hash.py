@@ -4,10 +4,16 @@ import hashlib
 import getpass
 import csv
 import secrets
+import re
 
 def main():
     #obtain user information. check validity of password.
-    username = input("Enter a username: ")
+    username = input("Enter your email ID: ")
+    if id_check(username) == False:
+        print("Invalid email ID. Please try again.")
+        main()
+    elif id_check(username) == True:
+        pass
 
     #obtains password from user without echo, checks for password strength
     pwd = userinput(getpass.getpass("Enter your password (min 12 characters, must include numbers and different cases): "))
@@ -37,6 +43,10 @@ def main():
             "salted": salted, 
             "iterations": iterations
         })
+
+def id_check(username: str) -> bool:
+    pattern = r"^([A-Z0-9_+\-]+\.?)*[A-Z0-9_+\-]@([A-Z0-9][A-Z0-9\-]*\.)+[A-Z]{2,}$"
+    return bool(re.match(pattern, username, re.IGNORECASE))
 
 #checks password strength for minimum length, numbers, and upper and lower cases
 def userinput(password_input):
