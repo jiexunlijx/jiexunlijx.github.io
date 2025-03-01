@@ -4,18 +4,24 @@ import hashlib
 import getpass
 import csv
 import secrets
+import re
 
 def main():
     #obtain user information. check validity of password.
     """
     Main function to handle user input for username and password, validate password strength,
     and store the salted hash and salt securely. It prompts the user to enter a username and 
-    a password twice, checks that the passwords match and meet strength requirements. If valid, 
-    it generates a salt and a salted hash using the salting function. The username, salt, 
+    a password twice, checks that the email ID is valid, checks that the passwords match and meet strength requirements.
+    If valid, it generates a salt and a salted hash using the salting function. The username, salt, 
     salted hash, and number of iterations are then stored in a CSV file for demonstration 
     purposes. Actual implementations should use secure databases for storage.
     """
-    username = input("Enter a username: ")
+    username = input("Enter your email ID: ")
+    if id_check(username) == False:
+        print("Invalid email ID. Please try again.")
+        main()
+    elif id_check(username) == True:
+        pass
 
     #obtains password from user without echo, checks for password strength
     pwd = userinput(getpass.getpass("Enter your password (min 12 characters, must include numbers and different cases): "))
@@ -45,6 +51,10 @@ def main():
             "salted": salted, 
             "iterations": iterations
         })
+
+def id_check(username: str) -> bool:
+    pattern = r"^([A-Z0-9_+\-]+\.?)*[A-Z0-9_+\-]@([A-Z0-9][A-Z0-9\-]*\.)+[A-Z]{2,}$"
+    return bool(re.match(pattern, username, re.IGNORECASE))
 
 #checks password strength for minimum length, numbers, and upper and lower cases
 def userinput(password_input):
@@ -92,7 +102,7 @@ def salting(password):
     # Define the output length in bytes
     length = 16
 
-    # Generate a random key and entropy input using os.urandom ()
+    # Generate a random key and entropy input using secrets module
     key = secrets.token_bytes(32)
     entropy = secrets.token_bytes(32)
 
