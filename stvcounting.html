@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <button class="button" onclick=="window.location.href='index.html';"> Home </button>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STV Vote Processor</title>
+    <!-- Include SheetJS library from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            max-width: 600px;
+        }
+        label, input, button {
+            margin: 5px 0;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Single Transferable Vote (STV) Processor</h1>
+    <p>Upload an Excel file with voter preferences. The first column is assumed to be voter identifiers and will be ignored, regardless of its header. Subsequent columns represent ranked preferences.</p>
+    
+    <!-- File upload input -->
+    <input type="file" id="fileInput" accept=".xlsx">
+    <br><br>
+    
+    <!-- Number of seats input -->
+    <label for="seatsInput">Number of seats:</label>
+    <input type="number" id="seatsInput" min="1">
+    <br><br>
+    
+    <!-- Process button -->
+    <button id="processButton">Process Votes</button>
+    <br><br>
+    
+    <!-- Results display area -->
+    <div id="results"></div>
+
+    <script>
+        // Add event listener to the process button
+        document.getElementById('processButton').addEventListener('click', processVotes);
+
+        function processVotes() {
+            // Get the uploaded file
+            let file = document.getElementById('fileInput').files[0];
+            if (!file) {
+                alert('Please select an Excel file.');
+                return;
+            }
+
+            // Get the number of seats
+            let seats = parseInt(document.getElementById('seatsInput').value);
+            if (isNaN(seats) || seats < 1) {
+                alert('Please enter a valid number of seats (positive integer).');
+                return;
+            }
+
+            // Read the file using FileReader
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let data = e.target.result;
+                // Parse the Excel file with SheetJS
+                let workbook = XLSX.read(data, {type: 'binary'});
+                let sheetName = workbook.SheetNames[0];
+                let worksheet = workbook.Sheets[sheetName];
+                let rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                // Skip header row and ignore first column of each row
+                let voterData = rows.slice(1).map(row => row.slice(1));
+
+                // Process voter preferences, removing duplicates while preserving order
+                let ballots = voterData.map(row => {
+                    let seen = new Set();
+                    let preferences = row.filter(cell => {
+                        if (cell === null || cell === undefined || seen.has(cell)) {
+                            return false;
+                        }
+                        seen.add(cell);
+                        return true;
+                    });
+                    return { preferences: preferences, value: 1.0 };
+                });
+
+                // Get unique candidates from all preferences
+                let allPreferences = ballots.flatMap(b => b.preferences);
+                let candidates = [...new Set(allPreferences)];
+
+                // Calculate STV results
+                let elected = stv(ballots, candidates, seats);
+
+                // Display results
+                let resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '<h2>Elected Candidates:</h2><ol>' + 
+                    elected.map(c => `<li>${c}</li>`).join('') + 
+                    '</ol>';
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function stv(ballots, candidates, seats) {
+            let totalVotes = ballots.length;
+            let quota = Math.floor(totalVotes / (seats + 1)) + 1;
+            let hopefuls = new Set(candidates);
+            let elected = [];
+
+            while (elected.length < seats && hopefuls.size > 0) {
+                let votes = {};
+                let ballotAssignments = {};
+                for (let candidate of hopefuls) {
+                    votes[candidate] = 0;
+                    ballotAssignments[candidate] = [];
+                }
+
+                for (let ballot of ballots) {
+                    let current = ballot.preferences.find(pref => hopefuls.has(pref));
+                    if (current) {
+                        votes[current] += ballot.value;
+                        ballotAssignments[current].push(ballot);
+                    }
+                }
+
+                let maxVotes = Math.max(...Object.values(votes));
+                if (maxVotes >= quota) {
+                    let candidate = Object.keys(votes).find(c => votes[c] === maxVotes);
+                    elected.push(candidate);
+                    let surplus = votes[candidate] - quota;
+                    let transferRatio = surplus / votes[candidate];
+                    for (let ballot of ballotAssignments[candidate]) {
+                        ballot.value *= transferRatio; // 0 if no surplus
+                    }
+                    hopefuls.delete(candidate);
+                } else {
+                    let minVotes = Math.min(...Object.values(votes));
+                    let toEliminate = Object.keys(votes).find(c => votes[c] === minVotes);
+                    hopefuls.delete(toEliminate);
+                }
+            }
+            return elected;
+        }
+    </script>
+</body>
+</html>
