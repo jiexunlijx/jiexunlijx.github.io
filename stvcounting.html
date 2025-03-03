@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <button class="button" onclick=="window.location.href='index.html';"> Home </button>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STV Vote Processor</title>
-    <!-- Include SheetJS library from CDN -->
+    <title>STV Vote Processor with Tie Handling</title>
+    <!-- Include SheetJS library for Excel parsing -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         body {
@@ -28,7 +27,7 @@
 </head>
 <body>
     <h1>Single Transferable Vote (STV) Processor</h1>
-    <p>Upload an Excel file with voter preferences. The first column is assumed to be voter identifiers and will be ignored, regardless of its header. Subsequent columns represent ranked preferences.</p>
+    <p>Upload an Excel file with voter preferences. The first column is assumed to be voter identifiers and will be ignored. Subsequent columns represent ranked preferences (e.g., candidate names or IDs).</p>
     
     <!-- File upload input -->
     <input type="file" id="fileInput" accept=".xlsx">
@@ -47,104 +46,134 @@
     <div id="results"></div>
 
     <script>
-        // Add event listener to the process button
+        // Event listener for the process button
         document.getElementById('processButton').addEventListener('click', processVotes);
 
         function processVotes() {
             // Get the uploaded file
-            let file = document.getElementById('fileInput').files[0];
+            const file = document.getElementById('fileInput').files[0];
             if (!file) {
                 alert('Please select an Excel file.');
                 return;
             }
 
             // Get the number of seats
-            let seats = parseInt(document.getElementById('seatsInput').value);
+            const seats = parseInt(document.getElementById('seatsInput').value);
             if (isNaN(seats) || seats < 1) {
                 alert('Please enter a valid number of seats (positive integer).');
                 return;
             }
 
-            // Read the file using FileReader
-            let reader = new FileReader();
+            // Read and parse the Excel file
+            const reader = new FileReader();
             reader.onload = function(e) {
-                let data = e.target.result;
-                // Parse the Excel file with SheetJS
-                let workbook = XLSX.read(data, {type: 'binary'});
-                let sheetName = workbook.SheetNames[0];
-                let worksheet = workbook.Sheets[sheetName];
-                let rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // Skip header row and ignore first column of each row
-                let voterData = rows.slice(1).map(row => row.slice(1));
+                // Process rows, skipping header and ignoring first column
+                const voterData = rows.slice(1).map(row => row.slice(1));
 
-                // Process voter preferences, removing duplicates while preserving order
-                let ballots = voterData.map(row => {
-                    let seen = new Set();
-                    let preferences = row.filter(cell => {
-                        if (cell === null || cell === undefined || seen.has(cell)) {
-                            return false;
-                        }
+                // Convert voter data into ballots, removing duplicates while preserving order
+                const ballots = voterData.map(row => {
+                    const seen = new Set();
+                    const preferences = row.filter(cell => {
+                        if (cell === null || cell === undefined || seen.has(cell)) return false;
                         seen.add(cell);
                         return true;
                     });
-                    return { preferences: preferences, value: 1.0 };
+                    return { preferences, value: 1.0 };
                 });
 
-                // Get unique candidates from all preferences
-                let allPreferences = ballots.flatMap(b => b.preferences);
-                let candidates = [...new Set(allPreferences)];
+                // Identify all unique candidates
+                const allPreferences = ballots.flatMap(b => b.preferences);
+                const candidates = [...new Set(allPreferences)];
 
                 // Calculate STV results
-                let elected = stv(ballots, candidates, seats);
+                const elected = stv(ballots, candidates, seats);
 
                 // Display results
-                let resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = '<h2>Elected Candidates:</h2><ol>' + 
-                    elected.map(c => `<li>${c}</li>`).join('') + 
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '<h2>Elected Candidates:</h2><ol>' +
+                    elected.map(c => `<li>${c}</li>`).join('') +
                     '</ol>';
             };
             reader.readAsBinaryString(file);
         }
 
         function stv(ballots, candidates, seats) {
-            let totalVotes = ballots.length;
-            let quota = Math.floor(totalVotes / (seats + 1)) + 1;
-            let hopefuls = new Set(candidates);
-            let elected = [];
+            const totalVotes = ballots.length;
+            const quota = Math.floor(totalVotes / (seats + 1)) + 1;
+            const hopefuls = new Set(candidates);
+            const elected = [];
+            const voteHistory = new Map(); // Tracks vote counts across rounds for tie-breaking
+
+            // Initialize vote history for all candidates
+            candidates.forEach(c => voteHistory.set(c, []));
 
             while (elected.length < seats && hopefuls.size > 0) {
-                let votes = {};
-                let ballotAssignments = {};
-                for (let candidate of hopefuls) {
+                const votes = {};
+                const ballotAssignments = {};
+                for (const candidate of hopefuls) {
                     votes[candidate] = 0;
                     ballotAssignments[candidate] = [];
                 }
 
-                for (let ballot of ballots) {
-                    let current = ballot.preferences.find(pref => hopefuls.has(pref));
+                // Count votes based on current preferences
+                for (const ballot of ballots) {
+                    const current = ballot.preferences.find(pref => hopefuls.has(pref));
                     if (current) {
                         votes[current] += ballot.value;
                         ballotAssignments[current].push(ballot);
                     }
                 }
 
-                let maxVotes = Math.max(...Object.values(votes));
+                // Update vote history
+                for (const candidate of hopefuls) {
+                    voteHistory.get(candidate).push(votes[candidate]);
+                }
+
+                const maxVotes = Math.max(...Object.values(votes));
                 if (maxVotes >= quota) {
-                    let candidate = Object.keys(votes).find(c => votes[c] === maxVotes);
+                    // Elect the candidate with the most votes
+                    const candidate = Object.keys(votes).find(c => votes[c] === maxVotes);
                     elected.push(candidate);
-                    let surplus = votes[candidate] - quota;
-                    let transferRatio = surplus / votes[candidate];
-                    for (let ballot of ballotAssignments[candidate]) {
-                        ballot.value *= transferRatio; // 0 if no surplus
+                    const surplus = votes[candidate] - quota;
+                    const transferRatio = surplus / votes[candidate];
+                    for (const ballot of ballotAssignments[candidate]) {
+                        ballot.value *= transferRatio; // Transfer surplus votes
                     }
                     hopefuls.delete(candidate);
                 } else {
-                    let minVotes = Math.min(...Object.values(votes));
-                    let toEliminate = Object.keys(votes).find(c => votes[c] === minVotes);
-                    hopefuls.delete(toEliminate);
+                    // Eliminate the candidate with the fewest votes, handling ties
+                    const minVotes = Math.min(...Object.values(votes));
+                    const candidatesWithMinVotes = Object.keys(votes).filter(c => votes[c] === minVotes);
+
+                    let candidateToEliminate;
+                    if (candidatesWithMinVotes.length > 1) {
+                        // Tie-breaking: Use earliest round where vote counts differ
+                        candidateToEliminate = candidatesWithMinVotes[0]; // Default to first candidate
+                        for (let round = voteHistory.get(candidatesWithMinVotes[0]).length - 1; round >= 0; round--) {
+                            const roundVotes = candidatesWithMinVotes.map(c => voteHistory.get(c)[round] || 0);
+                            const minRoundVotes = Math.min(...roundVotes);
+                            const tiedInRound = candidatesWithMinVotes.filter(c => (voteHistory.get(c)[round] || 0) === minRoundVotes);
+                            if (tiedInRound.length === 1) {
+                                candidateToEliminate = tiedInRound[0];
+                                break;
+                            } else if (round === 0) {
+                                // If tied in all rounds, use first candidate (simulating order of appearance)
+                                candidateToEliminate = candidatesWithMinVotes[0];
+                            }
+                        }
+                    } else {
+                        candidateToEliminate = candidatesWithMinVotes[0];
+                    }
+                    hopefuls.delete(candidateToEliminate);
                 }
             }
+
             return elected;
         }
     </script>
