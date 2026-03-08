@@ -1,0 +1,101 @@
+"""
+Save the transcript of any YouTube video to <video-title>.txt
+without using Selenium / WebDriver.
+
+pip install youtube-transcript-api
+"""
+
+import re
+import sys
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import (
+    TranscriptsDisabled,
+    NoTranscriptFound,
+    VideoUnavailable,
+)
+
+
+def extract_video_id(url: str) -> str:
+    """
+    Works for regular, shortened and embed URLs.
+    Return the 11-character video ID or raise ValueError.
+    """
+    parsed = urlparse(url.strip())
+    if parsed.hostname in {"youtu.be"}:
+        return parsed.path.lstrip("/")
+    if parsed.hostname in {"www.youtube.com", "youtube.com"}:
+        if parsed.path == "/watch":
+            return parse_qs(parsed.query)["v"][0]
+        if parsed.path.startswith("/embed/"):
+            return parsed.path.split("/")[2]
+    raise ValueError("Could not extract video ID from URL")
+
+
+def sanitize_filename(title: str) -> str:
+    """
+    Remove characters disallowed in Windows/macOS/Linux filenames
+    and limit length to 150 chars.
+    """
+    clean = re.sub(r'[<>:"/\\|?*]', "", title)
+    return (clean[:150] or "transcript").strip()
+
+
+def fetch_transcript(video_id: str, lang_priority=None) -> list[dict]:
+    """
+    lang_priority: list like ["en", "en-US", "en-GB"].
+    Returns list of {'text': "...", 'start': 0.0, 'duration': 4.0}
+    """
+    return YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(
+        lang_priority or ["en"]
+    ).fetch()
+
+
+def main() -> None:
+    video_url = input("Please enter the YouTube video URL: ").strip()
+    if not video_url:
+        sys.exit("No URL provided. Exiting.")
+
+    try:
+        video_id = extract_video_id(video_url)
+    except ValueError as err:
+        sys.exit(str(err))
+
+    try:
+        segments = fetch_transcript(video_id, ["en", "en-US", "en-GB"])
+    except (TranscriptsDisabled, NoTranscriptFound):
+        sys.exit("No transcript available for this video.")
+    except VideoUnavailable:
+        sys.exit("Video is unavailable or private.")
+    except Exception as err:
+        sys.exit(f"Unexpected error: {err}")
+
+    # Join only the text fields
+    full_text = " ".join(seg["text"].replace("\n", " ") for seg in segments)
+
+    # Try to get the title via YouTube oEmbed (one lightweight request)
+    try:
+        import requests
+        title_resp = requests.get(
+            "https://www.youtube.com/oembed",
+            params={"url": video_url, "format": "json"},
+            timeout=5,
+        )
+        title_resp.raise_for_status()
+        title = title_resp.json()["title"]
+    except Exception:
+        title = "transcript"
+
+    filename = sanitize_filename(title) + ".txt"
+    Path(filename).write_text(full_text, encoding="utf-8")
+
+    print(f"\nTranscript successfully saved to '{filename}'")
+    preview = full_text[:500] + ("..." if len(full_text) > 500 else "")
+    print("\nFirst 500 characters of transcript:\n")
+    print(preview)
+
+
+if __name__ == "__main__":
+    main()
