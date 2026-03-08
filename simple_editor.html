@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1a1a1a;
+      --surface:   #222222;
+      --border:    #333333;
+      --text:      #e8e6e1;
+      --muted:     #666666;
+      --accent:    #c8a96e;
+      --bar-h:     42px;
+      --font-ui:   'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Cascadia Mono', 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Top bar ── */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: var(--bar-h);
+      padding: 0 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    #toolbar .title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-right: auto;
+      padding-right: 16px;
+    }
+
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: var(--muted);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .tb-btn:hover {
+      color: var(--text);
+      border-color: var(--border);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .tb-btn:active {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .tb-btn:disabled {
+      opacity: 0.28;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .tb-btn svg {
+      flex-shrink: 0;
+    }
+
+    .tb-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 6px;
+    }
+
+    .save-btn {
+      color: var(--accent);
+      border-color: rgba(200,169,110,0.3);
+    }
+    .save-btn:hover {
+      color: #dfc080;
+      border-color: rgba(200,169,110,0.7);
+      background: rgba(200,169,110,0.06);
+    }
+
+    /* ── Editor area ── */
+    #editor-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+      padding: 32px 48px;
+      background: var(--bg);
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.75;
+      letter-spacing: 0.01em;
+      caret-color: var(--accent);
+      tab-size: 4;
+    }
+
+    #editor::selection {
+      background: rgba(200,169,110,0.22);
+    }
+
+    #editor::placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── Status bar ── */
+    #statusbar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 26px;
+      padding: 0 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .stat {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .stat span {
+      color: #999;
+    }
+
+    #unsaved-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+      margin-left: auto;
+    }
+    #unsaved-dot.visible { opacity: 1; }
+
+    /* toast */
+    #toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #2a2a2a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 8px 18px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="toolbar">
+    <span class="title">editor</span>
+
+    <button class="tb-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7v6h6"/><path d="M3 13C5 7 10 4 16 5.5a9 9 0 0 1 5 7.5"/>
+      </svg>
+      Undo
+    </button>
+
+    <button class="tb-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled>
+      Redo
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 7v6h-6"/><path d="M21 13C19 7 14 4 8 5.5A9 9 0 0 0 3 13"/>
+      </svg>
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn" id="btn-open" title="Open .txt file (Ctrl+O)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+      Open TXT
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn save-btn" id="btn-save" title="Save as .txt (Ctrl+S)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Save as TXT
+    </button>
+  </div>
+
+  <div id="editor-wrap">
+    <textarea id="editor" placeholder="Start typing…" spellcheck="true" autocorrect="on" autocapitalize="sentences"></textarea>
+  </div>
+
+  <div id="statusbar">
+    <div class="stat">WORDS <span id="stat-words">0</span></div>
+    <div class="stat">CHARS <span id="stat-chars">0</span></div>
+    <div class="stat">LINES <span id="stat-lines">1</span></div>
+    <div id="unsaved-dot" title="Unsaved changes"></div>
+  </div>
+
+</div>
+
+<input type="file" id="file-input" accept=".txt,text/plain" style="display:none" />
+<div id="toast"></div>
+
+<script>
+(() => {
+  const editor    = document.getElementById('editor');
+  const btnOpen   = document.getElementById('btn-open');
+  const fileInput = document.getElementById('file-input');
+  const btnUndo   = document.getElementById('btn-undo');
+  const btnRedo   = document.getElementById('btn-redo');
+  const btnSave   = document.getElementById('btn-save');
+  const statWords = document.getElementById('stat-words');
+  const statChars = document.getElementById('stat-chars');
+  const statLines = document.getElementById('stat-lines');
+  const unsavedDot = document.getElementById('unsaved-dot');
+  const toast     = document.getElementById('toast');
+
+  // ── History stack (manual, so we get clean undo/redo buttons) ──
+  const IDLE_MS = 500;
+  let history   = [''];
+  let histPtr   = 0;
+  let idleTimer = null;
+  let lastSaved = '';
+  let toastTimer = null;
+
+  function pushHistory(val) {
+    if (val === history[histPtr]) return;
+    history = history.slice(0, histPtr + 1);
+    history.push(val);
+    histPtr = history.length - 1;
+    updateButtons();
+  }
+
+  function scheduleHistory() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => pushHistory(editor.value), IDLE_MS);
+  }
+
+  function undo() {
+    if (histPtr <= 0) return;
+    clearTimeout(idleTimer);
+    histPtr--;
+    editor.value = history[histPtr];
+    updateButtons();
+    updateStats();
+    markDirty();
+  }
+
+  function redo() {
+    if (histPtr >= history.length - 1) return;
+    histPtr++;
+    editor.value = history[histPtr];
+    updateButtons();
+    updateStats();
+    markDirty();
+  }
+
+  function updateButtons() {
+    btnUndo.disabled = histPtr <= 0;
+    btnRedo.disabled = histPtr >= history.length - 1;
+  }
+
+  // ── Stats ──
+  function updateStats() {
+    const val   = editor.value;
+    const words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+    const chars = val.length;
+    const lines = val === '' ? 1 : val.split('\n').length;
+    statWords.textContent = words;
+    statChars.textContent = chars;
+    statLines.textContent = lines;
+  }
+
+  // ── Dirty state ──
+  function markDirty() {
+    unsavedDot.classList.toggle('visible', editor.value !== lastSaved);
+  }
+
+  // ── Save ──
+  function saveFile() {
+    const content  = editor.value;
+    const blob     = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    a.href         = url;
+    a.download     = 'document.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    lastSaved = content;
+    markDirty();
+    showToast('Saved as document.txt');
+  }
+
+  function showToast(msg) {
+    clearTimeout(toastTimer);
+    toast.textContent = msg;
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // ── Events ──
+  editor.addEventListener('input', () => {
+    scheduleHistory();
+    updateStats();
+    markDirty();
+  });
+
+  // ── Open ──
+  function openFile() {
+    fileInput.value = '';
+    fileInput.click();
+  }
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      editor.value = e.target.result;
+      history = [editor.value];
+      histPtr = 0;
+      lastSaved = editor.value;
+      updateButtons();
+      updateStats();
+      markDirty();
+      showToast('Opened: ' + file.name);
+      editor.focus();
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  btnOpen.addEventListener('click', openFile);
+  btnUndo.addEventListener('click', undo);
+  btnRedo.addEventListener('click', redo);
+  btnSave.addEventListener('click', saveFile);
+
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = editor.selectionStart;
+      const end   = editor.selectionEnd;
+      editor.value = editor.value.substring(0, start) + '\t' + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + 1;
+      scheduleHistory();
+      updateStats();
+      markDirty();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key === 'o') { e.preventDefault(); openFile(); }
+    if (ctrl && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+    if (ctrl && e.key === 's') { e.preventDefault(); saveFile(); }
+  });
+
+  // ── Init ──
+  updateStats();
+  updateButtons();
+  editor.focus();
+})();
+</script>
+</body>
+</html>
