@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore Weather Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky: #0a1628;
+            --sky-mid: #0e2044;
+            --sky-light: #1a3a6e;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56,189,248,0.15);
+            --gold: #fbbf24;
+            --rain: #7dd3fc;
+            --surface: rgba(255,255,255,0.04);
+            --surface-hover: rgba(255,255,255,0.08);
+            --border: rgba(56,189,248,0.18);
+            --text: #e2f4ff;
+            --muted: #94a3b8;
+            --green: #4ade80;
+            --red: #f87171;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--sky);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Atmospheric background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(56,189,248,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 20% 80%, rgba(14,32,68,0.8) 0%, transparent 60%),
+                linear-gradient(180deg, #0a1628 0%, #060f1e 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Rain effect */
+        .rain-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .raindrop {
+            position: absolute;
+            top: -20px;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, rgba(125,211,252,0.25));
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(110vh); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: var(--surface-hover); }
+
+        h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            color: var(--text);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 span {
+            color: var(--accent);
+            font-style: italic;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* Divider */
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            margin: 1.2rem auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 1.75rem;
+            backdrop-filter: blur(12px);
+            transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            background: var(--surface-hover);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px var(--border);
+        }
+
+        .card:hover::before { opacity: 1; }
+
+        .card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .card h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.2rem;
+            color: var(--text);
+            margin-bottom: 0.3rem;
+        }
+
+        .card-meta {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 1.2rem;
+            letter-spacing: 0.04em;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: linear-gradient(135deg, var(--accent), #0ea5e9);
+            color: var(--sky);
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 999px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: opacity 0.2s, transform 0.1s;
+            letter-spacing: 0.02em;
+        }
+
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        .loading.visible { display: flex; }
+
+        .spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(56,189,248,0.3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .result {
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            max-height: 320px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .result::-webkit-scrollbar { width: 4px; }
+        .result::-webkit-scrollbar-track { background: transparent; }
+        .result::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* Data rows */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-row:last-child { border-bottom: none; }
+        .data-label { color: var(--muted); font-size: 0.82rem; }
+        .data-value { color: var(--text); font-weight: 500; }
+
+        .forecast-block {
+            background: rgba(255,255,255,0.03);
+            border-radius: 0.75rem;
+            padding: 0.85rem 1rem;
+            margin-bottom: 0.6rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .forecast-block .day {
+            font-family: 'DM Serif Display', serif;
+            color: var(--accent);
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-glow);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge.green { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--green); }
+        .badge.red { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
+        .badge.gold { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: var(--gold); }
+
+        .error-msg {
+            color: var(--red);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .station-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .station-row:last-child { border-bottom: none; }
+        .station-name { color: var(--muted); font-size: 0.82rem; }
+        .station-val { 
+            font-weight: 600; 
+            font-size: 0.9rem;
+            color: var(--rain);
+        }
+        .station-val.active { color: var(--accent); }
+
+        .rain-bar-wrap {
+            flex: 1;
+            margin: 0 0.75rem;
+            height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .rain-bar {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--rain), var(--accent));
+            transition: width 0.5s ease;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--muted);
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 1.5rem 1rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="rain-container" id="rainContainer"></div>
+
+<div class="container">
+    <header>
+        <button class="back-btn" onclick="window.location.href='index.html'">← Home</button>
+        <h1>Singapore <span>Weather</span></h1>
+        <div class="divider"></div>
+        <p class="subtitle">Real-time data · NEA APIs · Updated every 5 min</p>
+    </header>
+
+    <div class="grid">
+
+        <!-- 2-Hour Forecast -->
+        <div class="card">
+            <span class="card-icon">🌦</span>
+            <h2>2-Hour Forecast</h2>
+            <p class="card-meta">Area-level nowcast · NEA</p>
+            <button class="btn" onclick="fetch2HourForecast(this)">Fetch Data</button>
+            <div class="loading" id="forecast2h-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="forecast2h-result"></div>
+        </div>
+
+        <!-- 24-Hour Forecast -->
+        <div class="card">
+            <span class="card-icon">🌤</span>
+            <h2>24-Hour Forecast</h2>
+            <p class="card-meta">General outlook · NEA</p>
+            <button class="btn" onclick="fetch24HourForecast(this)">Fetch Data</button>
+            <div class="loading" id="forecast24h-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="forecast24h-result"></div>
+        </div>
+
+        <!-- 4-Day Forecast -->
+        <div class="card">
+            <span class="card-icon">📅</span>
+            <h2>4-Day Forecast</h2>
+            <p class="card-meta">Extended outlook · NEA</p>
+            <button class="btn" onclick="fetch4DayForecast(this)">Fetch Data</button>
+            <div class="loading" id="forecast4d-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="forecast4d-result"></div>
+        </div>
+
+        <!-- PSI -->
+        <div class="card">
+            <span class="card-icon">💨</span>
+            <h2>Air Quality (PSI)</h2>
+            <p class="card-meta">Pollutant Standards Index · NEA</p>
+            <button class="btn" onclick="fetchPSI(this)">Fetch Data</button>
+            <div class="loading" id="psi-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="psi-result"></div>
+        </div>
+
+        <!-- UV Index -->
+        <div class="card">
+            <span class="card-icon">☀️</span>
+            <h2>UV Index</h2>
+            <p class="card-meta">Hourly UV readings · NEA</p>
+            <button class="btn" onclick="fetchUV(this)">Fetch Data</button>
+            <div class="loading" id="uv-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="uv-result"></div>
+        </div>
+
+        <!-- Rainfall — FIXED -->
+        <div class="card">
+            <span class="card-icon">🌧</span>
+            <h2>Rainfall Readings</h2>
+            <p class="card-meta">Station-level · 5-min updates · NEA</p>
+            <button class="btn" onclick="fetchRainfall(this)">Fetch Data</button>
+            <div class="loading" id="rainfall-loading"><div class="spinner"></div> Loading…</div>
+            <div class="result" id="rainfall-result"></div>
+        </div>
+
+    </div>
+
+    <footer>Data sourced from <strong>data.gov.sg</strong> · Open Data Licence · Singapore</footer>
+</div>
+
+<script>
+    // ── Rain animation ────────────────────────────────────────────────────────
+    (function() {
+        const container = document.getElementById('rainContainer');
+        for (let i = 0; i < 60; i++) {
+            const d = document.createElement('div');
+            d.className = 'raindrop';
+            const h = 40 + Math.random() * 80;
+            d.style.cssText = `left:${Math.random()*100}%;height:${h}px;animation-duration:${0.6+Math.random()*1.2}s;animation-delay:${Math.random()*2}s;opacity:${0.1+Math.random()*0.25}`;
+            container.appendChild(d);
+        }
+    })();
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function setLoading(id, show) {
+        const el = document.getElementById(`${id}-loading`);
+        show ? el.classList.add('visible') : el.classList.remove('visible');
+    }
+
+    function showError(id, msg) {
+        document.getElementById(`${id}-result`).innerHTML =
+            `<p class="error-msg">⚠ ${msg}</p>`;
+    }
+
+    function fmtTime(ts) {
+        try { return new Date(ts).toLocaleTimeString('en-SG', {hour:'2-digit',minute:'2-digit'}); }
+        catch { return ts; }
+    }
+
+    // ── 2-Hour Forecast ───────────────────────────────────────────────────────
+    async function fetch2HourForecast(btn) {
+        const id = 'forecast2h';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api.data.gov.sg/v1/environment/2-hour-weather-forecast');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            display2HourForecast(data, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function display2HourForecast(data, id) {
+        const el = document.getElementById(`${id}-result`);
+        const forecasts = data?.items?.[0]?.forecasts;
+        if (!forecasts?.length) { el.innerHTML = '<p style="color:var(--muted)">No data available.</p>'; return; }
+        el.innerHTML = forecasts.map(f => `
+            <div class="station-row">
+                <span class="station-name">${f.area}</span>
+                <span class="badge">${f.forecast}</span>
+            </div>`).join('');
+    }
+
+    // ── 24-Hour Forecast ──────────────────────────────────────────────────────
+    async function fetch24HourForecast(btn) {
+        const id = 'forecast24h';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api.data.gov.sg/v1/environment/24-hour-weather-forecast');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            display24HourForecast(data, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function display24HourForecast(data, id) {
+        const el = document.getElementById(`${id}-result`);
+        const item = data?.items?.[0];
+        if (!item) { el.innerHTML = '<p style="color:var(--muted)">No data available.</p>'; return; }
+        const g = item.general;
+        el.innerHTML = `
+            <div class="forecast-block">
+                <div class="data-row"><span class="data-label">Forecast</span><span class="badge">${g.forecast}</span></div>
+                <div class="data-row"><span class="data-label">Temperature</span><span class="data-value">${g.temperature.low}°C – ${g.temperature.high}°C</span></div>
+                <div class="data-row"><span class="data-label">Humidity</span><span class="data-value">${g.relative_humidity.low}% – ${g.relative_humidity.high}%</span></div>
+                <div class="data-row"><span class="data-label">Wind</span><span class="data-value">${g.wind.speed.low}–${g.wind.speed.high} km/h ${g.wind.direction}</span></div>
+            </div>`;
+    }
+
+    // ── 4-Day Forecast ────────────────────────────────────────────────────────
+    async function fetch4DayForecast(btn) {
+        const id = 'forecast4d';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api.data.gov.sg/v1/environment/4-day-weather-forecast');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            display4DayForecast(data, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function display4DayForecast(data, id) {
+        const el = document.getElementById(`${id}-result`);
+        const forecasts = data?.items?.[0]?.forecasts;
+        if (!forecasts?.length) { el.innerHTML = '<p style="color:var(--muted)">No data available.</p>'; return; }
+        el.innerHTML = forecasts.map(d => `
+            <div class="forecast-block">
+                <div class="day">${d.date}</div>
+                <div class="data-row"><span class="data-label">Forecast</span><span class="badge">${d.forecast}</span></div>
+                <div class="data-row"><span class="data-label">Temp</span><span class="data-value">${d.temperature.low}°C – ${d.temperature.high}°C</span></div>
+                <div class="data-row"><span class="data-label">Wind</span><span class="data-value">${d.wind.speed.low}–${d.wind.speed.high} km/h ${d.wind.direction}</span></div>
+            </div>`).join('');
+    }
+
+    // ── PSI ───────────────────────────────────────────────────────────────────
+    async function fetchPSI(btn) {
+        const id = 'psi';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api.data.gov.sg/v1/environment/psi');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            displayPSI(data, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function psiClass(v) {
+        if (v <= 50) return 'green';
+        if (v <= 100) return '';
+        return 'red';
+    }
+
+    // PM2.5 24-hr bands: Good ≤12, Moderate ≤35, Unhealthy ≤55, Very Unhealthy ≤150, Hazardous >150
+    function pm25Class(v) {
+        if (v <= 12) return 'green';
+        if (v <= 55) return 'gold';
+        return 'red';
+    }
+
+    function displayPSI(data, id) {
+        const el = document.getElementById(`${id}-result`);
+        const readings = data?.items?.[0]?.readings;
+        if (!readings) { el.innerHTML = '<p style="color:var(--muted)">No data available.</p>'; return; }
+        const regions = ['national','central','north','south','east','west'];
+        el.innerHTML = regions.map(r => {
+            const v = readings.psi_twenty_four_hourly?.[r] ?? '—';
+            const pm = readings.pm25_twenty_four_hourly?.[r] ?? '—';
+            return `<div class="station-row">
+                <span class="station-name">${r.charAt(0).toUpperCase()+r.slice(1)}</span>
+                <span style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+                    <span class="badge ${psiClass(v)}">PSI ${v}</span>
+                    <span class="badge ${pm25Class(pm)}">PM2.5 ${pm}</span>
+                </span>
+            </div>`;
+        }).join('');
+    }
+
+    // ── UV Index ──────────────────────────────────────────────────────────────
+    async function fetchUV(btn) {
+        const id = 'uv';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api.data.gov.sg/v1/environment/uv-index');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            displayUV(data, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function uvClass(v) {
+        if (v <= 2) return 'green';
+        if (v <= 5) return '';
+        if (v <= 7) return 'gold';
+        return 'red';
+    }
+
+    function uvLabel(v) {
+        if (v <= 2) return 'Low';
+        if (v <= 5) return 'Moderate';
+        if (v <= 7) return 'High';
+        if (v <= 10) return 'Very High';
+        return 'Extreme';
+    }
+
+    function displayUV(data, id) {
+        const el = document.getElementById(`${id}-result`);
+        const uv = data?.items?.[0]?.index?.[0];
+        if (!uv) { el.innerHTML = '<p style="color:var(--muted)">No data available.</p>'; return; }
+        el.innerHTML = `
+            <div class="forecast-block" style="text-align:center;padding:1.25rem">
+                <div style="font-family:'DM Serif Display',serif;font-size:3rem;color:var(--gold);line-height:1">${uv.value}</div>
+                <div style="margin:0.4rem 0"><span class="badge ${uvClass(uv.value)}">${uvLabel(uv.value)}</span></div>
+                <div style="color:var(--muted);font-size:0.78rem;margin-top:0.5rem">as of ${fmtTime(uv.timestamp)}</div>
+            </div>`;
+    }
+
+    // ── Rainfall — FIXED ──────────────────────────────────────────────────────
+    // v2 API response structure:
+    //   data.data.stations[]  → { id, deviceId, name, location: { latitude, longitude } }
+    //   data.data.items[]     → { timestamp, readings: [{ stationId, value }] }
+    // The old code incorrectly used data.items and snake_case field "station_id".
+    async function fetchRainfall(btn) {
+        const id = 'rainfall';
+        btn.disabled = true; setLoading(id, true);
+        try {
+            const r = await fetch('https://api-open.data.gov.sg/v2/real-time/api/rainfall');
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const json = await r.json();
+            displayRainfall(json, id);
+        } catch(e) { showError(id, 'Failed to fetch. ' + e.message); }
+        finally { setLoading(id, false); btn.disabled = false; }
+    }
+
+    function displayRainfall(json, id) {
+        const el = document.getElementById(`${id}-result`);
+
+        // v2 API wraps payload under json.data
+        const payload = json?.data;
+        const stations = payload?.stations ?? [];
+        const readings = payload?.items?.[0]?.readings ?? [];
+
+        if (!readings.length) {
+            el.innerHTML = '<p style="color:var(--muted)">No rainfall data available at this time.</p>';
+            return;
+        }
+
+        // Build stationId → name lookup
+        const stationMap = {};
+        stations.forEach(s => { stationMap[s.id] = s.name; });
+
+        // Show only stations with rain, sorted descending; fall back to all if none
+        const withRain = readings.filter(r => r.value > 0).sort((a,b) => b.value - a.value);
+        const display = withRain.length ? withRain : readings.sort((a,b) => b.value - a.value).slice(0, 20);
+        const maxVal = Math.max(...display.map(r => r.value), 0.1);
+
+        const summary = withRain.length
+            ? `<div style="color:var(--muted);font-size:0.78rem;margin-bottom:0.75rem">🌧 ${withRain.length} station${withRain.length>1?'s':''} reporting rain</div>`
+            : `<div style="color:var(--muted);font-size:0.78rem;margin-bottom:0.75rem">☀️ No stations reporting rain — showing top 20 stations</div>`;
+
+        el.innerHTML = summary + display.map(r => {
+            const name = stationMap[r.stationId] ?? r.stationId;
+            const pct = (r.value / maxVal * 100).toFixed(1);
+            const valClass = r.value > 0 ? 'active' : '';
+            return `<div class="station-row">
+                <span class="station-name" title="${r.stationId}">${name}</span>
+                <div class="rain-bar-wrap"><div class="rain-bar" style="width:${pct}%"></div></div>
+                <span class="station-val ${valClass}">${r.value} mm</span>
+            </div>`;
+        }).join('');
+    }
+</script>
+</body>
+</html>
