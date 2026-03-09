@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dice of Fate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --parchment: #f0e6d0;
+            --ink: #2c1810;
+            --blood: #8b1a1a;
+            --ember: #d4621a;
+            --gold: #c9a84c;
+            --gold-light: #e8c96a;
+            --bg: #130c06;
+            --stone: #3a2820;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Crimson Text', Georgia, serif;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        /* ── CHROME ── */
+        #chrome {
+            position: fixed;
+            top:0; left:0; right:0;
+            height: 42px;
+            z-index: 10;
+            background: linear-gradient(180deg, #0e0804 0%, rgba(14,8,4,0.95) 100%);
+            border-bottom: 1px solid rgba(201,168,76,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+        #chrome h1 {
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            font-size: clamp(0.95rem, 3.5vw, 1.3rem);
+            color: var(--gold-light);
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 16px rgba(201,168,76,0.45);
+        }
+        #chrome .orn { color: var(--gold); opacity:0.55; font-size:0.85rem; }
+
+        /* ── SHELL ── */
+        #shell {
+            position: fixed;
+            top: 42px; bottom:0; left:0; right:0;
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* ── CONTROLS ── */
+        #controls {
+            width: 260px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            background: linear-gradient(160deg, #1e1208, #110a04);
+            border-right: 1px solid rgba(201,168,76,0.1);
+            padding: 0.8rem 0.7rem;
+            overflow-y: auto;
+        }
+
+        .panel-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            color: rgba(201,168,76,0.4);
+            text-align: center;
+            text-transform: uppercase;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid rgba(201,168,76,0.1);
+        }
+
+        .dice-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, var(--stone), #231510);
+            border: 1px solid rgba(201,168,76,0.14);
+            border-radius: 5px;
+            padding: 0.4rem 0.55rem;
+            gap: 0.4rem;
+            transition: border-color 0.15s;
+        }
+        .dice-row:hover { border-color: rgba(201,168,76,0.32); }
+
+        .dice-row-left { display:flex; align-items:center; gap:0.4rem; flex:1; }
+        .die-icon { font-size:1.15rem; filter:drop-shadow(0 0 4px rgba(201,168,76,0.3)); }
+        .die-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--gold-light);
+        }
+
+        .dice-input-wrap { display:flex; align-items:center; }
+        .adj {
+            background: rgba(201,168,76,0.1);
+            border: 1px solid rgba(201,168,76,0.22);
+            color: var(--gold-light);
+            width: 24px; height: 26px;
+            font-size: 1rem; font-weight: bold; line-height:1;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.1s;
+        }
+        .adj:hover { background: rgba(201,168,76,0.25); }
+        .adj:first-child { border-radius:3px 0 0 3px; border-right:none; }
+        .adj:last-child  { border-radius:0 3px 3px 0; border-left:none; }
+
+        input[type="number"] {
+            width: 44px; height: 26px;
+            border: 1px solid rgba(201,168,76,0.22);
+            border-radius: 0;
+            background: rgba(0,0,0,0.4);
+            color: var(--gold-light);
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            text-align: center;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
+        input[type="number"]:focus { outline:none; border-color:var(--gold); }
+
+        #rollBtn {
+            margin-top: 0.3rem;
+            width: 100%;
+            background: linear-gradient(180deg, #a01515, var(--blood) 55%, #6b1010);
+            color: var(--gold-light);
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.09);
+            padding: 0.65rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 0.88rem;
+            letter-spacing: 0.15em;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 14px rgba(139,26,26,0.45), inset 0 1px 0 rgba(255,255,255,0.09);
+            transition: all 0.15s;
+        }
+        #rollBtn::before { content:'⚔ '; }
+        #rollBtn::after  { content:' ⚔'; }
+        #rollBtn:hover:not(:disabled) {
+            background: linear-gradient(180deg, #c01a1a, #a01515 55%, #801212);
+            box-shadow: 0 6px 22px rgba(139,26,26,0.65), 0 0 10px rgba(201,168,76,0.18);
+            transform: translateY(-1px);
+        }
+        #rollBtn:active:not(:disabled) { transform:translateY(1px); }
+        #rollBtn:disabled {
+            background: linear-gradient(180deg, #3a1010, #2c0c0c);
+            color: rgba(201,168,76,0.3);
+            cursor: not-allowed; transform:none;
+        }
+
+        #clearBtn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid rgba(201,168,76,0.15);
+            color: rgba(201,168,76,0.38);
+            font-family: 'Cinzel', serif;
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            padding: 0.3rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        #clearBtn:hover { border-color:rgba(201,168,76,0.35); color:rgba(201,168,76,0.65); }
+
+        /* ── RESULTS PANEL ── */
+        #results {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: linear-gradient(160deg, #f5ead6, #ead9b4);
+        }
+
+        #total-bar {
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--stone), #1a0e08);
+            border-bottom: 1px solid rgba(201,168,76,0.18);
+            padding: 0.5rem 0.9rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+            min-height: 40px;
+        }
+        #total-bar .lbl {
+            font-family: 'Cinzel', serif;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            color: rgba(201,168,76,0.45);
+            text-transform: uppercase;
+        }
+        #total-num {
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--gold-light);
+            text-shadow: 0 0 10px rgba(201,168,76,0.35);
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        #total-bar.empty #total-num { color:rgba(201,168,76,0.2); }
+        #total-breakdown {
+            font-family: 'Crimson Text', serif;
+            font-style: italic;
+            color: rgba(201,168,76,0.4);
+            font-size: 0.75rem;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        #results-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        #results-body::-webkit-scrollbar { width:5px; }
+        #results-body::-webkit-scrollbar-track { background:rgba(0,0,0,0.06); }
+        #results-body::-webkit-scrollbar-thumb { background:rgba(139,26,26,0.28); border-radius:3px; }
+
+        #placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: rgba(44,24,16,0.28);
+            font-style: italic;
+            font-size: 0.95rem;
+            user-select: none;
+        }
+        #placeholder .big { font-size: 2.2rem; opacity:0.2; }
+
+        .loading-runes {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            color: var(--blood);
+            animation: pulse 1s ease-in-out infinite;
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+        @keyframes pulse { 0%,100%{opacity:0.25} 50%{opacity:1} }
+
+        /* ── RESULT CARDS ── */
+        .result-card {
+            background: rgba(255,255,255,0.42);
+            border: 1px solid rgba(139,26,26,0.16);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .rcard-header {
+            background: linear-gradient(135deg, var(--stone), #1a0e08);
+            padding: 0.35rem 0.65rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .rch-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.08em;
+        }
+        .rch-sub {
+            font-family: 'Crimson Text', serif;
+            font-size: 0.78rem;
+            color: rgba(201,168,76,0.45);
+            font-style: italic;
+            margin-left: auto;
+        }
+
+        /* frequency grid — auto-fills columns so d20 spreads wide, small dice stay compact */
+        .freq-grid {
+            padding: 0.45rem 0.55rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+            gap: 0.25rem;
+        }
+
+        .freq-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(0,0,0,0.04);
+            border: 1px solid rgba(139,26,26,0.08);
+            border-radius: 3px;
+            padding: 0.2rem 0.35rem;
+        }
+        .fc-face {
+            font-family: 'Cinzel', serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--ink);
+            min-width: 16px;
+            text-align: right;
+        }
+        .fc-face.is-max { color: var(--blood); }
+        .fc-face.is-min { color: rgba(44,24,16,0.32); }
+
+        .fc-bar-wrap {
+            flex: 1;
+            background: rgba(0,0,0,0.08);
+            border-radius: 2px;
+            height: 6px;
+            overflow: hidden;
+        }
+        .fc-bar {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--blood), var(--ember));
+        }
+        .fc-bar.is-max { background: linear-gradient(90deg, #c9a84c, #ffd700); }
+
+        .fc-count {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--ink);
+            min-width: 20px;
+            text-align: right;
+        }
+        .fc-count.zero { color:rgba(44,24,16,0.22); font-weight:400; }
+
+        .rolls-toggle {
+            display: block;
+            width: 100%;
+            background: rgba(0,0,0,0.03);
+            border: none;
+            border-top: 1px solid rgba(139,26,26,0.09);
+            font-family: 'Cinzel', serif;
+            font-size: 0.58rem;
+            letter-spacing: 0.15em;
+            color: rgba(139,26,26,0.45);
+            text-transform: uppercase;
+            padding: 0.28rem 0.6rem;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.12s, color 0.12s;
+        }
+        .rolls-toggle:hover { background:rgba(0,0,0,0.06); color:var(--blood); }
+
+        .rolls-chips {
+            padding: 0.4rem 0.55rem 0.5rem;
+            border-top: 1px solid rgba(139,26,26,0.07);
+            line-height: 1.7;
+            display: none;
+        }
+        .chip {
+            display: inline-block;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            background: var(--stone);
+            color: var(--gold-light);
+            padding: 1px 4px;
+            border-radius: 2px;
+            margin: 1px;
+        }
+        .chip.is-max { background:var(--blood); color:#ffd700; box-shadow:0 0 4px rgba(255,215,0,0.28); }
+        .chip.is-min { background:#1e100a; color:rgba(201,168,76,0.35); }
+
+        /* ══ MOBILE ══ */
+        @media (max-width: 580px) {
+            #shell { flex-direction: column; }
+
+            #controls {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                border-right: none;
+                border-bottom: 1px solid rgba(201,168,76,0.1);
+                padding: 0.45rem 0.5rem;
+                gap: 0.35rem;
+                /* allow controls to grow a bit but not dominate */
+                flex-shrink: 0;
+                overflow-y: visible;
+            }
+
+            .panel-label { width:100%; margin-bottom:0; }
+
+            /* each dice row takes half width */
+            .dice-row {
+                flex: 1 1 calc(50% - 0.2rem);
+                min-width: 130px;
+            }
+
+            #rollBtn  { flex: 1 1 calc(60% - 0.2rem); margin-top:0; order:99; }
+            #clearBtn { flex: 1 1 calc(38% - 0.2rem); margin-top:0; order:100; align-self:stretch; }
+
+            #results { flex:1; min-height:0; }
+
+            .freq-grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); }
+        }
+
+        @media (max-width: 360px) {
+            .dice-row { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<header id="chrome">
+    <span class="orn">✦</span>
+    <h1>Dice of Fate</h1>
+    <span class="orn">✦</span>
+</header>
+
+<div id="shell">
+
+    <!-- CONTROLS -->
+    <aside id="controls">
+        <div class="panel-label">Choose Dice</div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">◆</span><span class="die-label">D4</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d4',-1)">−</button>
+                <input type="number" id="d4" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d4',1)">+</button>
+            </div>
+        </div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">⬡</span><span class="die-label">D6</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d6',-1)">−</button>
+                <input type="number" id="d6" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d6',1)">+</button>
+            </div>
+        </div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">◈</span><span class="die-label">D8</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d8',-1)">−</button>
+                <input type="number" id="d8" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d8',1)">+</button>
+            </div>
+        </div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">⬟</span><span class="die-label">D10</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d10',-1)">−</button>
+                <input type="number" id="d10" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d10',1)">+</button>
+            </div>
+        </div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">✦</span><span class="die-label">D12</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d12',-1)">−</button>
+                <input type="number" id="d12" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d12',1)">+</button>
+            </div>
+        </div>
+
+        <div class="dice-row">
+            <div class="dice-row-left"><span class="die-icon">⬠</span><span class="die-label">D20</span></div>
+            <div class="dice-input-wrap">
+                <button class="adj" onclick="adj('d20',-1)">−</button>
+                <input type="number" id="d20" min="0" max="999" value="0">
+                <button class="adj" onclick="adj('d20',1)">+</button>
+            </div>
+        </div>
+
+        <button id="rollBtn" onclick="rollDice()">Cast the Dice</button>
+        <button id="clearBtn" onclick="clearAll()">Clear All</button>
+    </aside>
+
+    <!-- RESULTS -->
+    <main id="results">
+        <div id="total-bar" class="empty">
+            <span class="lbl">Total</span>
+            <span id="total-num">—</span>
+            <span id="total-breakdown"></span>
+        </div>
+        <div id="results-body">
+            <div id="placeholder">
+                <span class="big">🎲</span>
+                <span>Set your dice and cast</span>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<script>
+    function adj(id, delta) {
+        const el = document.getElementById(id);
+        el.value = Math.max(0, Math.min(999, (parseInt(el.value) || 0) + delta));
+    }
+
+    function clearAll() {
+        ['d4','d6','d8','d10','d12','d20'].forEach(id => {
+            document.getElementById(id).value = 0;
+        });
+    }
+
+    async function fetchRandom(min, max, count) {
+        const MAX = 10000;
+        let all = [], left = count;
+        while (left > 0) {
+            const batch = Math.min(left, MAX);
+            try {
+                const r = await fetch(`https://www.random.org/integers/?num=${batch}&min=${min}&max=${max}&col=1&base=10&format=plain&rnd=new`);
+                if (!r.ok) throw 0;
+                const t = await r.text();
+                all = all.concat(t.trim().split('\n').map(Number));
+            } catch {
+                for (let i = 0; i < batch; i++)
+                    all.push(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+            left -= batch;
+        }
+        return all;
+    }
+
+    async function rollDice() {
+        const btn  = document.getElementById('rollBtn');
+        const body = document.getElementById('results-body');
+        const tbar = document.getElementById('total-bar');
+        const tnum = document.getElementById('total-num');
+        const tbd  = document.getElementById('total-breakdown');
+
+        btn.disabled = true;
+        body.innerHTML = '<div class="loading-runes">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ — Consulting the oracle…</div>';
+        tnum.textContent = '…';
+        tbar.classList.add('empty');
+        tbd.textContent = '';
+
+        const types = [4,6,8,10,12,20];
+        let grand = 0, parts = [], cards = [];
+
+        try {
+            for (const type of types) {
+                const count = Math.min(999, Math.max(0, parseInt(document.getElementById('d'+type).value)||0));
+                if (!count) continue;
+                const rolls = await fetchRandom(1, type, count);
+                const sub = rolls.reduce((a,b)=>a+b, 0);
+                grand += sub;
+                parts.push(count+'d'+type+'='+sub);
+                cards.push({type, count, rolls, sub});
+            }
+
+            body.innerHTML = '';
+
+            if (!cards.length) {
+                body.innerHTML = '<div id="placeholder"><span class="big">🎲</span><span>No dice selected</span></div>';
+                tnum.textContent = '—';
+                tbar.classList.add('empty');
+                return;
+            }
+
+            tbar.classList.remove('empty');
+            tnum.textContent = grand.toLocaleString();
+            tbd.textContent  = parts.join(' + ');
+
+            for (const {type, count, rolls, sub} of cards) {
+                const freq = {};
+                for (let f=1; f<=type; f++) freq[f]=0;
+                rolls.forEach(r => freq[r]++);
+                const maxCnt = Math.max(...Object.values(freq));
+
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                // header
+                const hdr = document.createElement('div');
+                hdr.className = 'rcard-header';
+                hdr.innerHTML = `<span class="rch-title">${count}d${type}</span><span class="rch-sub">total: ${sub.toLocaleString()}</span>`;
+                card.appendChild(hdr);
+
+                // freq grid
+                const fg = document.createElement('div');
+                fg.className = 'freq-grid';
+                for (let f=1; f<=type; f++) {
+                    const c = freq[f];
+                    const pct = maxCnt > 0 ? (c/maxCnt*100).toFixed(1) : 0;
+                    const isMax = f===type, isMin = f===1;
+                    const cell = document.createElement('div');
+                    cell.className = 'freq-cell';
+                    cell.innerHTML =
+                        `<span class="fc-face${isMax?' is-max':isMin?' is-min':''}">${f}</span>`+
+                        `<div class="fc-bar-wrap"><div class="fc-bar${isMax?' is-max':''}" style="width:${pct}%"></div></div>`+
+                        `<span class="fc-count${c===0?' zero':''}">${c}</span>`;
+                    fg.appendChild(cell);
+                }
+                card.appendChild(fg);
+
+                // collapsible roll chips
+                const tog = document.createElement('button');
+                tog.className = 'rolls-toggle';
+                tog.textContent = '▶ Individual rolls ('+rolls.length+')';
+                const chipsDiv = document.createElement('div');
+                chipsDiv.className = 'rolls-chips';
+                let open = false;
+
+                tog.addEventListener('click', () => {
+                    open = !open;
+                    if (open && !chipsDiv.childNodes.length) {
+                        rolls.slice(0, 300).forEach(r => {
+                            const s = document.createElement('span');
+                            s.className = 'chip'+(r===type?' is-max':r===1?' is-min':'');
+                            s.textContent = r;
+                            chipsDiv.appendChild(s);
+                        });
+                        if (rolls.length > 300) {
+                            const m = document.createElement('span');
+                            m.style.cssText = 'font-size:0.7rem;color:var(--blood);font-style:italic;margin-left:3px;';
+                            m.textContent = '+' + (rolls.length-300) + ' more';
+                            chipsDiv.appendChild(m);
+                        }
+                    }
+                    chipsDiv.style.display = open ? 'block' : 'none';
+                    tog.textContent = (open?'▼':'▶') + ' Individual rolls ('+rolls.length+')';
+                });
+
+                card.appendChild(tog);
+                card.appendChild(chipsDiv);
+                body.appendChild(card);
+            }
+
+        } catch(e) {
+            body.innerHTML = '<div style="padding:1.2rem;color:var(--blood);font-style:italic;text-align:center">The oracle is silent. Try again.</div>';
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.querySelectorAll('input[type="number"]').forEach(el => {
+        el.addEventListener('input', () => {
+            const v = parseInt(el.value);
+            if (isNaN(v)||v<0) el.value=0;
+            else if (v>999) el.value=999;
+        });
+    });
+</script>
+</body>
+</html>
