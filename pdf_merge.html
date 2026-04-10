@@ -1,135 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local PDF Merger</title>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f7f6;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 { color: #333; margin-bottom: 1.5rem; }
-        .input-group { margin-bottom: 1.2rem; text-align: left; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555; }
-        input[type="file"] { width: 100%; }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: 1rem;
-            transition: background 0.2s;
-        }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status { margin-top: 1rem; font-size: 0.9rem; color: #666; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Merger</title>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f5f4f0;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    border: 0.5px solid #ddd;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .drop-zone {
+    border: 1.5px dashed #bbb;
+    border-radius: 10px;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: #fafaf8;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: #6c63ff;
+    background: #f3f2ff;
+  }
+
+  .drop-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .drop-text {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 0.25rem;
+  }
+
+  .drop-sub {
+    font-size: 0.78rem;
+    color: #999;
+  }
+
+  #file-input { display: none; }
+
+  .file-list {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f7f6f2;
+    border: 0.5px solid #e0dfd8;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    user-select: none;
+  }
+
+  .file-item.dragging {
+    opacity: 0.4;
+  }
+
+  .file-item.drag-target {
+    border-color: #6c63ff;
+    background: #f0efff;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: #bbb;
+    font-size: 1rem;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .drag-handle:active { cursor: grabbing; }
+
+  .file-num {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    background: #6c63ff;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .file-name {
+    font-size: 0.85rem;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #222;
+  }
+
+  .file-pages {
+    font-size: 0.75rem;
+    color: #888;
+    flex-shrink: 0;
+  }
+
+  .file-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #bbb;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+
+  .file-remove:hover { color: #e05252; }
+
+  .controls {
+    margin-top: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .output-name {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 0.5px solid #ccc;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    background: #fafaf8;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .output-name:focus { border-color: #6c63ff; }
+
+  .btn-merge {
+    padding: 0.5rem 1.25rem;
+    background: #6c63ff;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .btn-merge:hover { background: #574fd6; }
+  .btn-merge:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status {
+    margin-top: 1rem;
+    font-size: 0.82rem;
+    min-height: 1.2em;
+  }
+
+  .status.ok { color: #2a7a2a; }
+  .status.err { color: #c0392b; }
+  .status.info { color: #555; }
+
+  .summary {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f7f6f2;
+    border-radius: 8px;
+    border: 0.5px solid #e0dfd8;
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .hint {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: #aaa;
+    text-align: center;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; color: #eee; }
+    .card { background: #242424; border-color: #3a3a3a; }
+    .drop-zone { background: #2a2a2a; border-color: #444; }
+    .drop-zone:hover, .drop-zone.drag-over { background: #2a2840; border-color: #7c73ff; }
+    .drop-text { color: #aaa; }
+    .file-item { background: #2e2e2e; border-color: #3a3a3a; }
+    .file-item.drag-target { background: #2a2840; border-color: #7c73ff; }
+    .file-name { color: #ddd; }
+    .output-name { background: #2a2a2a; border-color: #444; color: #eee; }
+    .output-name:focus { border-color: #7c73ff; }
+    .summary { background: #2e2e2e; border-color: #3a3a3a; color: #aaa; }
+    .btn-merge { background: #7c73ff; }
+    .btn-merge:hover { background: #6c63ff; }
+    .status.ok { color: #5dba5d; }
+  }
+</style>
 </head>
 <body>
 
-<div class="container">
-    <h2>PDF Merger</h2>
-    <div class="input-group">
-        <label>First PDF (Pages 1-N)</label>
-        <input type="file" id="file1" accept=".pdf">
-    </div>
-    <div class="input-group">
-        <label>Second PDF (Appended to end)</label>
-        <input type="file" id="file2" accept=".pdf">
-    </div>
-    <button id="mergeBtn">Merge & Save</button>
-    <div id="status">Ready. Processing is 100% local.</div>
+<h1>PDF Merger</h1>
+<p class="subtitle">Combine multiple PDFs into one — runs entirely in your browser, no upload needed</p>
+
+<div class="card">
+  <div class="drop-zone" id="drop-zone">
+    <span class="drop-icon">📄</span>
+    <p class="drop-text">Drop PDF files here, or <strong>click to browse</strong></p>
+    <p class="drop-sub">Files are processed locally — nothing leaves your device</p>
+  </div>
+  <input type="file" id="file-input" accept="application/pdf" multiple>
+
+  <div class="file-list" id="file-list"></div>
+
+  <div class="controls" id="controls" style="display:none">
+    <input class="output-name" id="output-name" type="text" value="merged.pdf" placeholder="output filename">
+    <button class="btn-merge" id="merge-btn">Merge &amp; Save</button>
+  </div>
+
+  <p class="status info" id="status"></p>
+  <div class="summary" id="summary"></div>
 </div>
 
+<p class="hint">Drag to reorder files · pages are appended in listed order · no quality loss</p>
+
 <script>
-    const { PDFDocument } = PDFLib;
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileList = document.getElementById('file-list');
+const controls = document.getElementById('controls');
+const mergeBtn = document.getElementById('merge-btn');
+const outputName = document.getElementById('output-name');
+const statusEl = document.getElementById('status');
+const summaryEl = document.getElementById('summary');
 
-    async function mergePdfs() {
-        const file1Input = document.getElementById('file1').files[0];
-        const file2Input = document.getElementById('file2').files[0];
-        const status = document.getElementById('status');
-        const btn = document.getElementById('mergeBtn');
+let files = [];
+let dragSrcIndex = null;
 
-        if (!file1Input || !file2Input) {
-            alert("Please select two PDF files first!");
-            return;
-        }
+dropZone.addEventListener('click', () => fileInput.click());
 
-        try {
-            btn.disabled = true;
-            status.innerText = "Processing locally...";
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
 
-            // Read files as ArrayBuffers
-            const pdf1Bytes = await file1Input.arrayBuffer();
-            const pdf2Bytes = await file2Input.arrayBuffer();
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 
-            // Create a new PDF document
-            const mergedPdf = await PDFDocument.create();
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+});
 
-            // Load the two PDFs
-            const pdf1 = await PDFDocument.load(pdf1Bytes);
-            const pdf2 = await PDFDocument.load(pdf2Bytes);
+fileInput.addEventListener('change', () => {
+  addFiles([...fileInput.files]);
+  fileInput.value = '';
+});
 
-            // Copy pages from PDF 1
-            const pages1 = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
-            pages1.forEach(page => mergedPdf.addPage(page));
+async function addFiles(newFiles) {
+  const pdfs = newFiles.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if (pdfs.length === 0) {
+    setStatus('No PDF files detected in selection.', 'err');
+    return;
+  }
 
-            // Copy pages from PDF 2
-            const pages2 = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
-            pages2.forEach(page => mergedPdf.addPage(page));
+  for (const f of pdfs) {
+    const pageCount = await getPageCount(f);
+    files.push({ file: f, pages: pageCount });
+  }
 
-            // Serialize the PDF to bytes
-            const mergedPdfBytes = await mergedPdf.save();
+  render();
+  setStatus('');
+}
 
-            // Trigger the download/save dialog
-            download(mergedPdfBytes, "merged_document.pdf", "application/pdf");
-            
-            status.innerText = "Done! File saved.";
-            btn.disabled = false;
-        } catch (err) {
-            console.error(err);
-            status.innerText = "Error merging files. Check console.";
-            btn.disabled = false;
-        }
+async function getPageCount(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    return pdf.getPageCount();
+  } catch {
+    return '?';
+  }
+}
+
+function render() {
+  fileList.innerHTML = '';
+  controls.style.display = files.length > 0 ? 'flex' : 'none';
+  summaryEl.style.display = 'none';
+
+  files.forEach((entry, i) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.draggable = true;
+    item.dataset.index = i;
+
+    item.innerHTML = `
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <span class="file-num">${i + 1}</span>
+      <span class="file-name" title="${entry.file.name}">${entry.file.name}</span>
+      <span class="file-pages">${entry.pages === '?' ? '? pages' : entry.pages + (entry.pages === 1 ? ' page' : ' pages')}</span>
+      <button class="file-remove" title="Remove" data-index="${i}">✕</button>
+    `;
+
+    item.addEventListener('dragstart', e => {
+      dragSrcIndex = i;
+      setTimeout(() => item.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-target'));
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-target'));
+      item.classList.add('drag-target');
+    });
+
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIndex = parseInt(item.dataset.index);
+      if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+      const moved = files.splice(dragSrcIndex, 1)[0];
+      files.splice(targetIndex, 0, moved);
+      dragSrcIndex = null;
+      render();
+    });
+
+    item.querySelector('.file-remove').addEventListener('click', () => {
+      files.splice(i, 1);
+      render();
+      if (files.length === 0) setStatus('');
+    });
+
+    fileList.appendChild(item);
+  });
+}
+
+mergeBtn.addEventListener('click', async () => {
+  if (files.length < 1) return;
+
+  mergeBtn.disabled = true;
+  setStatus('Reading files…', 'info');
+
+  try {
+    const merged = await PDFLib.PDFDocument.create();
+    let totalPages = 0;
+    const breakdown = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const entry = files[i];
+      setStatus(`Processing file ${i + 1} of ${files.length}: ${entry.file.name}`, 'info');
+
+      const buf = await entry.file.arrayBuffer();
+      const src = await PDFLib.PDFDocument.load(buf, {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      });
+
+      const count = src.getPageCount();
+      const indices = Array.from({ length: count }, (_, k) => k);
+      const copied = await merged.copyPages(src, indices);
+      copied.forEach(p => merged.addPage(p));
+
+      breakdown.push(`File ${i + 1}: "${entry.file.name}" → ${count} page${count !== 1 ? 's' : ''} (pages ${totalPages + 1}–${totalPages + count})`);
+      totalPages += count;
     }
 
-    // Helper function to trigger browser download dialog
-    function download(data, filename, type) {
-        const file = new Blob([data], { type: type });
-        const a = document.createElement("a");
-        const url = URL.createObjectURL(file);
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 0);
-    }
+    setStatus('Saving…', 'info');
 
-    document.getElementById('mergeBtn').addEventListener('click', mergePdfs);
+    const bytes = await merged.save({ useObjectStreams: false });
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = outputName.value.trim() || 'merged.pdf';
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    setStatus(`Done! Merged ${files.length} files into ${totalPages} pages.`, 'ok');
+
+    summaryEl.innerHTML = breakdown.join('<br>') + `<br><strong>Total: ${totalPages} pages</strong>`;
+    summaryEl.style.display = 'block';
+
+  } catch (err) {
+    console.error(err);
+    setStatus('Error: ' + (err.message || 'Could not merge files. One may be encrypted or corrupted.'), 'err');
+  }
+
+  mergeBtn.disabled = false;
+});
+
+function setStatus(msg, type = 'info') {
+  statusEl.textContent = msg;
+  statusEl.className = 'status ' + type;
+}
 </script>
-
 </body>
 </html>
